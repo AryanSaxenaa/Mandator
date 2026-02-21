@@ -11,7 +11,7 @@ import { createWebhookRouter } from './webhookRouter.js';
 import scheduler from './scheduler.js';
 
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
 
 const app = express();
 const httpServer = createServer(app);

@@ -1,6 +1,13 @@
 import { io as ioClient, Socket } from 'socket.io-client';
 
-const SOCKET_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:3001';
+function resolveSocketUrl(): string {
+  let url = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+  if (!url) return 'http://localhost:3001';
+  url = url.replace(/\/$/, '');
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  return url;
+}
+const SOCKET_URL = resolveSocketUrl();
 
 export const socket: Socket = ioClient(SOCKET_URL, { autoConnect: false });
 

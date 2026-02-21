@@ -1,7 +1,14 @@
 // In production set VITE_API_URL to your Railway backend URL, e.g.:
-// https://mandator-backend.up.railway.app
+// https://mandator-production.up.railway.app  (include https://)
 // Leave empty in dev — Vite proxy handles /api/* → localhost:3001
-const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+function resolveBase(): string {
+  let url = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+  if (!url) return '';
+  url = url.replace(/\/$/, ''); // strip trailing slash
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url; // add protocol if missing
+  return url;
+}
+const BASE = resolveBase();
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
