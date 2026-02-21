@@ -1,4 +1,7 @@
-const BASE = '';
+// In production set VITE_API_URL to your Railway backend URL, e.g.:
+// https://mandator-backend.up.railway.app
+// Leave empty in dev — Vite proxy handles /api/* → localhost:3001
+const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
