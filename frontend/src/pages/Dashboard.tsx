@@ -150,7 +150,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <span style={{ color: 'var(--text-dim)' }}>
-                    {new Date(tx.ts).toLocaleTimeString()}
+                    {tx.ts || tx.timestamp ? new Date(tx.ts || tx.timestamp).toLocaleTimeString() : '--'}
                   </span>
                 </div>
               ))}

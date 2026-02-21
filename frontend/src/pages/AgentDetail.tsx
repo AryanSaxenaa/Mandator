@@ -186,19 +186,29 @@ export default function AgentDetail() {
           {/* Execution log */}
           {executionLog.length > 0 && (
             <div className="h-40 overflow-y-auto p-3 font-mono text-[11px]" style={{ borderTop: '1px solid var(--border-tech)', background: 'var(--bg-dark)' }}>
-              {executionLog.map((entry, i) => (
-                <div key={i} className="flex gap-2 py-0.5">
-                  <span style={{ color: 'var(--text-dim)' }}>{new Date(entry.ts).toLocaleTimeString()}</span>
-                  <span style={{
-                    color: entry.level === 'error' ? 'var(--error)' :
-                           entry.level === 'warn' ? 'var(--warning)' :
-                           entry.level === 'success' ? 'var(--success)' :
-                           'var(--text-main)',
-                  }}>
-                    {entry.message}
-                  </span>
-                </div>
-              ))}
+              {executionLog.map((entry, i) => {
+                const color =
+                  entry.event === 'error'   ? 'var(--danger)'   :
+                  entry.event === 'blocked' ? 'var(--warning)'  :
+                  entry.event === 'complete' || entry.event === 'tx_confirmed' ? 'var(--success)' :
+                  'var(--text-main)';
+                const label = entry.nodeName || entry.nodeType || entry.nodeId || '?';
+                const detail =
+                  entry.message  ? entry.message  :
+                  entry.error    ? entry.error    :
+                  entry.result   ? `→ ${entry.result}` :
+                  entry.txHash   ? `tx ${entry.txHash.slice(0, 10)}…` :
+                  entry.event;
+                const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '--:--:--';
+                return (
+                  <div key={i} className="flex gap-2 py-0.5">
+                    <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>{ts}</span>
+                    <span style={{ color, flexShrink: 0 }}>[{entry.event?.toUpperCase()}]</span>
+                    <span style={{ color: 'var(--text-dim)', flexShrink: 0 }}>{label}</span>
+                    <span style={{ color }}>{detail}</span>
+                  </div>
+                );
+              })}
               <div ref={logEndRef} />
             </div>
           )}
@@ -277,7 +287,7 @@ export default function AgentDetail() {
                       <div className="mt-1" style={{ color: 'var(--error)' }}>{tx.error}</div>
                     )}
                     <div className="mt-1" style={{ color: 'var(--text-dim)' }}>
-                      {new Date(tx.ts).toLocaleString()}
+                      {tx.ts || tx.timestamp ? new Date(tx.ts || tx.timestamp).toLocaleString() : '--'}
                     </div>
                   </div>
                 ))}

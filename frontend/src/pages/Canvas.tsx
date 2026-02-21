@@ -42,6 +42,8 @@ export default function Canvas() {
   const [runAfterDeploy, setRunAfterDeploy] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [agentVault, setAgentVault] = useState('');
+  const [showNamePipeline, setShowNamePipeline] = useState(false);
+  const [pendingNameAction, setPendingNameAction] = useState<'save' | 'deploy' | null>(null);
   const [toastError, setToastError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -181,12 +183,20 @@ export default function Canvas() {
   }, [reactFlowInstance, pipelineId, debouncedSave]);
 
   // FIX 6: handleSave uses refs + has try/catch with visible error
-  const handleSave = async (): Promise<string | null> => {
+  // For brand-new pipelines (no pipelineId) show a name modal first
+  const handleSave = async (overrideName?: string): Promise<string | null> => {
+    if (!pipelineId && !overrideName) {
+      setPendingNameAction('save');
+      setShowNamePipeline(true);
+      return null;
+    }
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setIsSaving(true);
+    const nameToUse = overrideName || pipelineName || 'New Pipeline';
     try {
       if (!pipelineId) {
-        const pipe = await pipelineStore.createPipeline(pipelineName || 'New Pipeline');
+        const pipe = await pipelineStore.createPipeline(nameToUse);
+        setPipelineName(pipe.name);
         pipelineStore.setActivePipeline(pipe.id);
         loadedForIdRef.current = pipe.id;
         navigate(`/canvas?id=${pipe.id}`, { replace: true });
@@ -218,12 +228,18 @@ export default function Canvas() {
   };
 
   // FIX 8: handleDeploy doesn't block on save + has try/catch
-  const handleDeploy = async () => {
+  const handleDeploy = async (overrideName?: string) => {
     let currentPipelineId = pipelineId;
 
     if (!currentPipelineId) {
+      if (!overrideName) {
+        setPendingNameAction('deploy');
+        setShowNamePipeline(true);
+        return;
+      }
       try {
-        const pipe = await pipelineStore.createPipeline(pipelineName || 'New Pipeline');
+        const pipe = await pipelineStore.createPipeline(overrideName || pipelineName || 'New Pipeline');
+        setPipelineName(pipe.name);
         pipelineStore.setActivePipeline(pipe.id);
         loadedForIdRef.current = pipe.id;
         navigate(`/canvas?id=${pipe.id}`, { replace: true });
@@ -299,6 +315,18 @@ export default function Canvas() {
     pipelineStore.markDirty();
     debouncedSave();
   }, [pipelineId, debouncedSave]);
+
+  const handleConfirmPipelineName = async (name: string) => {
+    setShowNamePipeline(false);
+    if (!name.trim()) return;
+    setPipelineName(name.trim());
+    if (pendingNameAction === 'save') {
+      await handleSave(name.trim());
+    } else if (pendingNameAction === 'deploy') {
+      await handleDeploy(name.trim());
+    }
+    setPendingNameAction(null);
+  };
 
   const handleNewPipeline = async () => {
     try {
@@ -451,6 +479,50 @@ export default function Canvas() {
           </div>
         )}
       </div>
+
+      {/* Name Pipeline Modal */}
+      {showNamePipeline && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <TechCard className="w-80 p-6">
+            <h3 className="font-rajdhani font-bold text-lg uppercase tracking-wider mb-1" style={{ color: 'var(--text-main)' }}>
+              Name Your Pipeline
+            </h3>
+            <p className="text-xs font-mono mb-4" style={{ color: 'var(--text-dim)' }}>
+              Give this pipeline a name before {pendingNameAction === 'deploy' ? 'deploying' : 'saving'}.
+            </p>
+            <input
+              value={pipelineName === 'New Pipeline' ? '' : pipelineName}
+              onChange={e => setPipelineName(e.target.value)}
+              onKeyDown={e => {
+                e.stopPropagation();
+                if (e.key === 'Enter') handleConfirmPipelineName(pipelineName);
+                if (e.key === 'Escape') { setShowNamePipeline(false); setPendingNameAction(null); }
+              }}
+              className="w-full px-3 py-2 text-sm font-mono outline-none mb-4"
+              style={{ background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border-tech)' }}
+              placeholder="e.g. Daily DeFi Rebalance"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <AppButton
+                variant="secondary"
+                onClick={() => { setShowNamePipeline(false); setPendingNameAction(null); }}
+                className="flex-1"
+              >
+                Cancel
+              </AppButton>
+              <AppButton
+                variant="primary"
+                onClick={() => handleConfirmPipelineName(pipelineName)}
+                disabled={!pipelineName.trim() || pipelineName === 'New Pipeline'}
+                className="flex-1"
+              >
+                {pendingNameAction === 'deploy' ? 'Save & Deploy' : 'Save'}
+              </AppButton>
+            </div>
+          </TechCard>
+        </div>
+      )}
 
       {/* Create Agent Modal */}
       {showCreateAgent && (
