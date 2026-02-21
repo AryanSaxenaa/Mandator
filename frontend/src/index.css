@@ -14,7 +14,9 @@
   --border-tech: #E2E8F0;
   --success: #10B981;
   --danger: #EF4444;
+  --error: #EF4444;
   --warning: #F59E0B;
+  --info: #3B82F6;
   --grid-color: rgba(249, 115, 22, 0.05);
   --dot-color: rgba(249, 115, 22, 0.1);
 }
@@ -31,7 +33,9 @@
   --border-tech: #4c1d95;
   --success: #10B981;
   --danger: #EF4444;
+  --error: #EF4444;
   --warning: #F59E0B;
+  --info: #3B82F6;
   --grid-color: rgba(76, 29, 149, 0.1);
   --dot-color: rgba(157, 78, 221, 0.2);
 }
