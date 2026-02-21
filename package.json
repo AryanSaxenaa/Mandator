@@ -1,0 +1,11 @@
+{
+  "name": "mandator",
+  "private": true,
+  "scripts": {
+    "start": "cd backend && node server.js",
+    "install:backend": "cd backend && npm install"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
