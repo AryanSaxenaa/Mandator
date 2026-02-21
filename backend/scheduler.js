@@ -50,11 +50,11 @@ export function cancelCronJob(agentId) {
 }
 
 export async function initScheduler(io) {
-  const agents = getAgents();
+  const agents = await getAgents();
   for (const agent of agents) {
     if (agent.status !== 'active') continue;
     try {
-      const pipeline = getPipeline(agent.pipelineId);
+      const pipeline = await getPipeline(agent.pipelineId);
       const triggerNode = pipeline.nodes.find(n =>
         n.type === 'timeTriggerNode' || n.type === 'TIME_TRIGGER'
       );

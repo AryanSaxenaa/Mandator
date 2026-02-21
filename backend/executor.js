@@ -36,12 +36,12 @@ export async function executePipeline(pipelineId, triggerType, triggerPayload = 
   let pipeline, agent;
 
   try {
-    pipeline = getPipeline(pipelineId);
+    pipeline = await getPipeline(pipelineId);
   } catch {
     throw new Error(`Pipeline ${pipelineId} not found`);
   }
 
-  agent = getAgentByPipelineId(pipelineId);
+  agent = await getAgentByPipelineId(pipelineId);
   if (!agent) throw new Error(`No agent linked to pipeline ${pipelineId}`);
 
   try {
@@ -52,7 +52,7 @@ export async function executePipeline(pipelineId, triggerType, triggerPayload = 
       agentName: agent.name,
       pipelineId,
       vaultAddress: agent.vaultAddress,
-      dailySpent: getDailySpent(agent.id),
+      dailySpent: await getDailySpent(agent.id),
       timestamp: new Date().toISOString(),
       triggerType,
       triggerPayload,

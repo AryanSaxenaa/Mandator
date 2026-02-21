@@ -9,7 +9,7 @@ export function createWebhookRouter(io) {
     try {
       let agent;
       try {
-        agent = getAgent(req.params.agentId);
+        agent = await getAgent(req.params.agentId);
       } catch {
         return res.status(404).json({ error: 'Agent not found' });
       }

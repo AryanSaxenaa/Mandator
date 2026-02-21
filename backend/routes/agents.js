@@ -8,12 +8,13 @@ export function createAgentsRouter(io, scheduler) {
 
   router.get('/', async (req, res) => {
     try {
-      const agents = getAgents();
-      const enriched = agents.map(a => ({
-        ...a,
-        dailySpent: getDailySpent(a.id),
-        recentJournal: getJournal(a.id).slice(0, 5),
-      }));
+      const agents = await getAgents();
+      const enriched = [];
+      for (const a of agents) {
+        const dailySpent = await getDailySpent(a.id);
+        const recentJournal = (await getJournal(a.id)).slice(0, 5);
+        enriched.push({ ...a, dailySpent, recentJournal });
+      }
       enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       res.json(enriched);
     } catch (err) {
@@ -27,7 +28,7 @@ export function createAgentsRouter(io, scheduler) {
       if (!name || !pipelineId || !vaultAddress) {
         return res.status(400).json({ error: 'name, pipelineId, and vaultAddress are required' });
       }
-      try { getPipeline(pipelineId); } catch {
+      try { await getPipeline(pipelineId); } catch {
         return res.status(400).json({ error: 'Pipeline not found' });
       }
       const id = randomUUID();
@@ -54,9 +55,10 @@ export function createAgentsRouter(io, scheduler) {
 
   router.get('/:id', async (req, res) => {
     try {
-      const agent = getAgent(req.params.id);
-      const journal = getJournal(req.params.id).slice(0, 20);
-      res.json({ ...agent, recentJournal: journal, dailySpent: getDailySpent(agent.id) });
+      const agent = await getAgent(req.params.id);
+      const journal = (await getJournal(req.params.id)).slice(0, 20);
+      const dailySpent = await getDailySpent(agent.id);
+      res.json({ ...agent, recentJournal: journal, dailySpent });
     } catch (err) {
       res.status(404).json({ error: err.message });
     }
@@ -91,7 +93,7 @@ export function createAgentsRouter(io, scheduler) {
       const agent = await updateAgent(req.params.id, { status: 'active', lastRun: null });
       if (scheduler) {
         try {
-          const pipeline = getPipeline(agent.pipelineId);
+          const pipeline = await getPipeline(agent.pipelineId);
           const triggerNode = pipeline.nodes.find(n =>
             n.type === 'timeTriggerNode' || n.type === 'TIME_TRIGGER'
           );
@@ -119,7 +121,7 @@ export function createAgentsRouter(io, scheduler) {
 
   router.post('/:id/run', async (req, res) => {
     try {
-      const agent = getAgent(req.params.id);
+      const agent = await getAgent(req.params.id);
       if (agent.status === 'paused') {
         return res.status(409).json({ error: 'Agent is paused' });
       }

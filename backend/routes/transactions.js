@@ -6,12 +6,16 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const { agentId, limit = '50', offset = '0', nodeType } = req.query;
-    if (!agentId) return res.status(400).json({ error: 'agentId query param is required' });
-
-    let entries = getJournal(agentId, { nodeType: nodeType || undefined });
-    const total = entries.length;
     const limitNum = Math.min(parseInt(limit) || 50, 200);
     const offsetNum = parseInt(offset) || 0;
+
+    let entries;
+    if (agentId) {
+      entries = await getJournal(agentId, { nodeType: nodeType || undefined });
+    } else {
+      entries = await getAllJournal(limitNum + offsetNum);
+    }
+    const total = entries.length;
     entries = entries.slice(offsetNum, offsetNum + limitNum);
 
     res.json({ entries, total, limit: limitNum, offset: offsetNum });
@@ -23,7 +27,7 @@ router.get('/', async (req, res) => {
 router.get('/notifications', async (req, res) => {
   try {
     const { agentId, unread } = req.query;
-    const notifs = getNotifications({
+    const notifs = await getNotifications({
       agentId: agentId || undefined,
       unread: unread === 'true',
     });

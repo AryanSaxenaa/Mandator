@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   try {
-    const pipelines = getPipelines();
+    const pipelines = await getPipelines();
     const sorted = [...pipelines].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     res.json(sorted);
   } catch (err) {
@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const pipeline = getPipeline(req.params.id);
+    const pipeline = await getPipeline(req.params.id);
     res.json(pipeline);
   } catch (err) {
     res.status(404).json({ error: err.message });
@@ -59,7 +59,7 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const agents = getAgents();
+    const agents = await getAgents();
     const linked = agents.find(a => a.pipelineId === req.params.id && a.status === 'active');
     if (linked) {
       return res.status(409).json({ error: `Pipeline is used by active agent "${linked.name}"` });
