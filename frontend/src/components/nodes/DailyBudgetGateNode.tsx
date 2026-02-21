@@ -4,7 +4,7 @@ import { CalendarCheck } from 'lucide-react';
 
 export default memo(function DailyBudgetGateNode({ data }: { data: Record<string, unknown> }) {
   const config = (data?.config || {}) as Record<string, unknown>;
-  const limit = config.dailyLimitWei ? `${Number(BigInt(config.dailyLimitWei as string)) / 1e18} ETH/day` : 'No limit';
+  const limit = config.dailyBudget ? `${config.dailyBudget} ETH/day` : 'No limit';
   return (
     <BaseNode data={data} icon={CalendarCheck} label="Daily Budget" color="#F59E0B" handles={{
       top: true,

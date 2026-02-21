@@ -272,7 +272,7 @@ function journalToRow(j) {
     to: j.to || null,
     memo: j.memo || null,
     error: j.error || null,
-    result: j.result ? JSON.stringify(j.result) : null,
+    result: j.result != null ? (typeof j.result === 'string' ? j.result : JSON.stringify(j.result)) : null,
     timestamp: j.timestamp || new Date().toISOString(),
   };
 }

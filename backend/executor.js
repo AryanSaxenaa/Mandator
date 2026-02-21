@@ -6,6 +6,20 @@ function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+/** Convert an ETH string/number to Wei BigInt. Handles both ETH and raw Wei values. */
+function ethToWei(val) {
+  if (val === undefined || val === null || val === '') return 0n;
+  const s = val.toString().trim();
+  if (s === '0' || s === '') return 0n;
+  // If it's already a big integer-style string (>1e15), treat as Wei
+  if (/^\d{16,}$/.test(s)) return BigInt(s);
+  // Otherwise treat as ETH — multiply by 1e18
+  const parts = s.split('.');
+  const whole = parts[0] || '0';
+  const frac = (parts[1] || '').padEnd(18, '0').slice(0, 18);
+  return BigInt(whole) * 10n ** 18n + BigInt(frac);
+}
+
 function findNextPayNode(sourceNodeId, pipeline) {
   const edgeMap = new Map();
   for (const edge of pipeline.edges) {
@@ -60,8 +74,16 @@ export async function executePipeline(pipelineId, triggerType, triggerPayload = 
       lastTxRecipient: '',
     };
 
-    const startNode = pipeline.nodes.find(n => n.type === 'startNode' || n.type === 'START');
-    if (!startNode) throw new Error('Pipeline has no START node');
+    // Find entry point: startNode, or any trigger node (manual, time, webhook, balance)
+    const entryTypes = new Set([
+      'startNode', 'START',
+      'manualTriggerNode', 'MANUAL_TRIGGER',
+      'timeTriggerNode', 'TIME_TRIGGER',
+      'webhookTriggerNode', 'WEBHOOK_TRIGGER',
+      'balanceTriggerNode', 'BALANCE_TRIGGER',
+    ]);
+    const startNode = pipeline.nodes.find(n => entryTypes.has(n.type));
+    if (!startNode) throw new Error('Pipeline has no start or trigger node');
 
     const edgeMap = new Map();
     for (const edge of pipeline.edges) {
@@ -83,6 +105,7 @@ export async function executePipeline(pipelineId, triggerType, triggerPayload = 
         nodeId: currentNode.id,
         nodeName: currentNode.data?.label || currentNode.type,
         nodeType: currentNode.type,
+        status: result.halt ? 'halted' : 'ok',
         ...result,
         timestamp: new Date().toISOString(),
       });
@@ -111,7 +134,7 @@ export async function executePipeline(pipelineId, triggerType, triggerPayload = 
       nodeId: 'pipeline',
       nodeName: 'Pipeline',
       nodeType: 'SYSTEM',
-      event: 'error',
+      status: 'error',
       result: 'pipeline_error',
       error: err.message,
       timestamp: new Date().toISOString(),
@@ -180,8 +203,8 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'balanceTriggerNode':
     case 'BALANCE_TRIGGER': {
       emitExecuting();
-      const balance = Number(agent.lastKnownBalance || 0);
-      const threshold = Number(config.thresholdWei || 0);
+      const balance = BigInt(agent.lastKnownBalance || '0');
+      const threshold = ethToWei(config.threshold || config.thresholdWei || 0);
       const direction = config.direction || 'above';
       const passes = direction === 'above' ? balance >= threshold : balance <= threshold;
       if (!passes) {
@@ -195,9 +218,9 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'spendLimitCheckNode':
     case 'SPEND_LIMIT_CHECK': {
       emitExecuting();
-      const limit = BigInt(config.maxAmountWei || '0');
+      const limit = ethToWei(config.maxAmount || config.maxAmountWei || 0);
       const nextPayNode = findNextPayNode(node.id, pipeline);
-      const payAmount = nextPayNode ? BigInt(nextPayNode.data?.config?.amountWei || '0') : 0n;
+      const payAmount = nextPayNode ? ethToWei(nextPayNode.data?.config?.amount || nextPayNode.data?.config?.amountWei || 0) : 0n;
       const passes = limit === 0n || payAmount <= limit;
       const edge = passes ? 'PASS' : 'BLOCK';
       if (passes) emitComplete('within_limit', edge);
@@ -208,10 +231,10 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'dailyBudgetGateNode':
     case 'DAILY_BUDGET_GATE': {
       emitExecuting();
-      const dailyLimit = BigInt(config.dailyLimitWei || '0');
+      const dailyLimit = ethToWei(config.dailyBudget || config.dailyLimitWei || 0);
       const spent = BigInt(context.dailySpent || 0);
       const nextPayNode = findNextPayNode(node.id, pipeline);
-      const nextPayAmount = BigInt(nextPayNode?.data?.config?.amountWei || '0');
+      const nextPayAmount = ethToWei(nextPayNode?.data?.config?.amount || nextPayNode?.data?.config?.amountWei || 0);
       const wouldExceed = dailyLimit > 0n && (spent + nextPayAmount) > dailyLimit;
       const edge = wouldExceed ? 'BLOCK' : 'PASS';
       if (wouldExceed) emitBlocked('would_exceed_daily_limit');
@@ -222,7 +245,10 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'whitelistCheckNode':
     case 'WHITELIST_CHECK': {
       emitExecuting();
-      const whitelist = (config.recipients || []).map(a => a.toLowerCase().trim());
+      // Frontend sends config.addresses as newline-separated string; backend may also get config.recipients as array
+      let rawList = config.recipients || config.addresses || [];
+      if (typeof rawList === 'string') rawList = rawList.split('\n').map(s => s.trim()).filter(Boolean);
+      const whitelist = rawList.map(a => a.toLowerCase().trim());
       const nextPayNode = findNextPayNode(node.id, pipeline);
       const recipient = nextPayNode?.data?.config?.recipientAddress || '';
       const approved = whitelist.length === 0 || whitelist.includes(recipient.toLowerCase().trim());
@@ -235,7 +261,9 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'cooldownTimerNode':
     case 'COOLDOWN_TIMER': {
       emitExecuting();
-      const cooldownMs = (config.cooldownMinutes || 60) * 60 * 1000;
+      // Frontend sends cooldownSeconds; fall back to cooldownMinutes * 60 for legacy
+      const cooldownSec = config.cooldownSeconds || (config.cooldownMinutes || 60) * 60;
+      const cooldownMs = cooldownSec * 1000;
       const lastRun = agent.lastRun ? new Date(agent.lastRun).getTime() : 0;
       const elapsed = Date.now() - lastRun;
       const ready = elapsed >= cooldownMs;
@@ -266,6 +294,7 @@ async function evaluateNode(node, context, io, pipeline, agent) {
           nodeId: node.id,
           nodeName: node.data?.label || 'AI Decision',
           nodeType: 'AI_DECISION',
+          status: 'error',
           result: 'ai_error',
           error: err.message,
           timestamp: new Date().toISOString(),
@@ -280,7 +309,7 @@ async function evaluateNode(node, context, io, pipeline, agent) {
       emitExecuting();
       const journalId = randomUUID();
       const to = config.recipientAddress;
-      const amountWei = config.amountWei || '0';
+      const amountWei = ethToWei(config.amount || config.amountWei || 0).toString();
       const memo = config.memo || '';
 
       if (!/^0x[0-9a-fA-F]{40}$/.test(to)) {
@@ -364,8 +393,8 @@ async function evaluateNode(node, context, io, pipeline, agent) {
 
         const amount = Number(amountWei);
         await updateAgent(context.agentId, {
-          dailySpent: (agent.dailySpent || 0) + amount,
-          totalSpent: (agent.totalSpent || 0) + amount,
+          dailySpent: (Number(agent.dailySpent) || 0) + amount,
+          totalSpent: (Number(agent.totalSpent) || 0) + amount,
         });
 
         io.to(roomId).emit('tx:confirmed', {
@@ -396,7 +425,7 @@ async function evaluateNode(node, context, io, pipeline, agent) {
       emitExecuting();
       const journalId = randomUUID();
       const to = agent.vaultAddress;
-      const amountWei = config.amountWei || '0';
+      const amountWei = ethToWei(config.topupAmount || config.amountWei || 0).toString();
 
       if (!to || !/^0x[0-9a-fA-F]{40}$/.test(to)) {
         io.to(roomId).emit('node:error', { nodeId: node.id, error: 'Invalid vault address' });
@@ -509,8 +538,9 @@ async function evaluateNode(node, context, io, pipeline, agent) {
       const notif = {
         id: randomUUID(),
         agentId: context.agentId,
+        type: severity,
+        title: 'Pipeline Alert',
         message: resolved,
-        severity,
         read: false,
         createdAt: new Date().toISOString(),
       };

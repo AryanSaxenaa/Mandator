@@ -4,7 +4,9 @@ import { ListChecks } from 'lucide-react';
 
 export default memo(function WhitelistCheckNode({ data }: { data: Record<string, unknown> }) {
   const config = (data?.config || {}) as Record<string, unknown>;
-  const recipients = (config.recipients || []) as string[];
+  // config.addresses is a newline-separated string from the config panel
+  const addrStr = (config.addresses as string) || '';
+  const count = addrStr ? addrStr.split('\n').filter((s: string) => s.trim()).length : 0;
   return (
     <BaseNode data={data} icon={ListChecks} label="Whitelist" color="#06B6D4" handles={{
       top: true,
@@ -13,7 +15,7 @@ export default memo(function WhitelistCheckNode({ data }: { data: Record<string,
         { id: 'REJECTED', label: 'REJECTED', color: '#EF4444' },
       ],
     }}>
-      <p style={{ color: 'var(--text-dim)' }}>{recipients.length} address{recipients.length !== 1 ? 'es' : ''}</p>
+      <p style={{ color: 'var(--text-dim)' }}>{count} address{count !== 1 ? 'es' : ''}</p>
     </BaseNode>
   );
 });

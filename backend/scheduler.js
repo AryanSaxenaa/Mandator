@@ -8,7 +8,13 @@ export function parseTriggerToCron(config) {
   const type = config.intervalType || 'hours';
   const value = parseInt(config.intervalValue) || 1;
 
-  if (config.specificTime) {
+  // Custom cron expression — return as-is
+  if (type === 'cron' && config.cronExpression) {
+    return config.cronExpression;
+  }
+
+  // Daily at specific time
+  if (type === 'daily' && config.specificTime) {
     const [h, m] = config.specificTime.split(':').map(Number);
     if (!isNaN(h) && !isNaN(m)) {
       return `${m} ${h} * * *`;
