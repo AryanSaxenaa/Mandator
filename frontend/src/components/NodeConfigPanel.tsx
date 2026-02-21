@@ -25,6 +25,7 @@ function TextInput({ value, onChange, placeholder }: { value: string; onChange: 
     <input
       value={value}
       onChange={e => onChange(e.target.value)}
+      onKeyDown={e => e.stopPropagation()}
       placeholder={placeholder}
       className="w-full px-2 py-1.5 text-xs font-mono outline-none"
       style={{ background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border-tech)' }}
@@ -38,6 +39,7 @@ function NumberInput({ value, onChange, min, step, placeholder }: { value: numbe
       type="number"
       value={value}
       onChange={e => onChange(Number(e.target.value))}
+      onKeyDown={e => e.stopPropagation()}
       min={min}
       step={step}
       placeholder={placeholder}
@@ -65,6 +67,7 @@ function TextArea({ value, onChange, placeholder, rows }: { value: string; onCha
     <textarea
       value={value}
       onChange={e => onChange(e.target.value)}
+      onKeyDown={e => e.stopPropagation()}
       placeholder={placeholder}
       rows={rows || 3}
       className="w-full px-2 py-1.5 text-xs font-mono outline-none resize-none"
