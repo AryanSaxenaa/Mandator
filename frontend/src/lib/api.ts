@@ -11,10 +11,16 @@ function resolveBase(): string {
 const BASE = resolveBase();
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+      ...opts,
+    });
+  } catch (networkErr: any) {
+    // Network / CORS error — fetch itself throws, no response
+    throw new Error(`Network error: ${networkErr.message} (url: ${BASE}${path})`);
+  }
   if (res.status === 204) return undefined as T;
   const body = await res.json();
   if (!res.ok) throw new Error(body.error || `Request failed: ${res.status}`);
