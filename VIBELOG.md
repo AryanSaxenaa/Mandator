@@ -1200,3 +1200,23 @@ Replacing 4 lines with 5 lines in [](file:///c%3A/Users/91730/Documents/Mandator
 Ran terminal command:  git add -A && git commit -m "add cronos testnet support (0x152)" && git push origin main
 
 Made changes.
+
+
+## Session 9
+Only Do the changes on Landing Page.
+I want you to add the dark mode button on the landing page too and add missing elements
+
+## Session 10
+Not Able to set any value because the Configrator is not accepted correct input , sometimes a single char only, sometimes no number
+Fix these issues
+
+## Session 11
+input fields are not aaccpeting 0.02 onlyno like 1,23, or 0.1 0.4 .
+No input for every exiting node is not being updated and when typing the data on configure node panel is also not updating This is a major issue.
+Do a deeper thinking and search to fix these take your time
+
+## Session 12
+how to run manual trigger i see no run button
+Also nothing is happening when I am clicking on clear or deploy,
+I am able to find many errors and faults I want you to do a full audit and fix these
+
