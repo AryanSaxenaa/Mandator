@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-dark: #FFFFFF;
+  --bg-panel: #F8FAFC;
+  --bg-panel-transparent: rgba(248, 250, 252, 0.8);
+  --accent: #F97316;
+  --accent-glow: #FB923C;
+  --accent-rgb: 249, 115, 22;
+  --text-main: #0F172A;
+  --text-dim: #64748B;
+  --border-tech: #E2E8F0;
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --grid-color: rgba(249, 115, 22, 0.05);
+  --dot-color: rgba(249, 115, 22, 0.1);
+}
+
+.dark {
+  --bg-dark: #0D0518;
+  --bg-panel: #1A0F2E;
+  --bg-panel-transparent: rgba(26, 15, 46, 0.6);
+  --accent: #9d4edd;
+  --accent-glow: #7b2cbf;
+  --accent-rgb: 157, 78, 221;
+  --text-main: #E2E8F0;
+  --text-dim: #94A3B8;
+  --border-tech: #4c1d95;
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --grid-color: rgba(76, 29, 149, 0.1);
+  --dot-color: rgba(157, 78, 221, 0.2);
+}
+
+body {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.react-flow__edge-path {
+  stroke: var(--accent) !important;
+  stroke-width: 2;
+}
+
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 2px !important;
+  background: var(--accent) !important;
+  border: 1px solid var(--border-tech) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-tech); border-radius: 3px; }
