@@ -1,1 +1,36 @@
-{"pipelines":[]}
+{
+  "pipelines": [
+    {
+      "id": "4155203d-2ea9-44ce-9e06-8322b0bcfc94",
+      "name": "Untitled Pipeline",
+      "nodes": [],
+      "edges": [],
+      "status": "draft",
+      "createdAt": "2026-02-21T09:46:52.894Z",
+      "updatedAt": "2026-02-21T09:46:52.894Z"
+    },
+    {
+      "id": "d1840afe-4697-4c56-b001-50b1afc1d554",
+      "name": "Untitled Pipeline",
+      "nodes": [
+        {
+          "id": "node_1771667270657_0",
+          "type": "timeTriggerNode",
+          "position": {
+            "x": 140,
+            "y": 268
+          },
+          "data": {
+            "label": "time Trigger"
+          },
+          "width": 180,
+          "height": 83
+        }
+      ],
+      "edges": [],
+      "status": "draft",
+      "createdAt": "2026-02-21T09:48:01.987Z",
+      "updatedAt": "2026-02-21T09:48:01.987Z"
+    }
+  ]
+}
