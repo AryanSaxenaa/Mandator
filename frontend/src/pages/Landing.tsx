@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Shield, Zap, Bot } from 'lucide-react';
+import { Wallet, Bot, Moon, Sun } from 'lucide-react';
 import { useWalletStore } from '../store/walletStore';
-import { TechCard, AppButton } from '../components/ui/TechCard';
+import { AppButton } from '../components/ui/TechCard';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -18,50 +18,171 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg-dark)' }}>
-      <div className="max-w-lg w-full text-center space-y-8">
-        <div>
-          <h1 className="font-rajdhani font-bold text-4xl uppercase tracking-widest mb-2" style={{ color: 'var(--text-main)' }}>
-            Mandator
-          </h1>
-          <p className="text-sm font-mono" style={{ color: 'var(--text-dim)' }}>
-            Autonomous on-chain agents. Build pipelines, deploy, and let AI manage your transactions.
-          </p>
-        </div>
+    <div 
+      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+      style={{ background: 'var(--bg-dark)' }}
+    >
+      {/* Grid Background Pattern */}
+      <div 
+        className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage: 'linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
 
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: Bot, label: 'AI Agents', desc: 'Groq-powered decisions' },
-            { icon: Shield, label: 'Safety Rails', desc: 'Spend limits & budget gates' },
-            { icon: Zap, label: 'Real Transactions', desc: 'Sign with your wallet' },
-          ].map(f => (
-            <TechCard key={f.label}>
-              <f.icon size={24} className="mx-auto mb-2" style={{ color: 'var(--accent)' }} />
-              <p className="text-xs font-rajdhani font-bold uppercase" style={{ color: 'var(--text-main)' }}>{f.label}</p>
-              <p className="text-[10px] font-mono" style={{ color: 'var(--text-dim)' }}>{f.desc}</p>
-            </TechCard>
-          ))}
-        </div>
+      {/* Dark Mode Toggle - Top Right */}
+      <button
+        onClick={() => walletStore.toggleDarkMode()}
+        className="absolute top-8 right-8 z-20 p-3 transition-all duration-200"
+        style={{
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--border-tech)',
+          color: 'var(--text-main)',
+          clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
+        }}
+        aria-label="Toggle dark mode"
+      >
+        {walletStore.darkMode ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
 
-        <TechCard className="text-left">
-          <AppButton
-            variant="primary"
-            icon={Wallet}
-            onClick={handleConnect}
-            disabled={walletStore.isConnecting}
-            className="w-full justify-center"
+      {/* Decorative Circle - Top Left */}
+      <div 
+        className="absolute"
+        style={{
+          top: '80px',
+          left: '80px',
+          width: '128px',
+          height: '128px',
+          border: '1px solid var(--dot-color)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div 
+          style={{
+            width: '96px',
+            height: '96px',
+            borderTop: '2px solid var(--accent)',
+            borderRadius: '50%',
+            animation: 'spin 8s linear infinite',
+          }}
+        />
+      </div>
+
+      {/* Decorative Circle - Bottom Right */}
+      <div 
+        className="absolute"
+        style={{
+          bottom: '80px',
+          right: '80px',
+          width: '192px',
+          height: '192px',
+          border: '1px solid var(--dot-color)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div 
+          style={{
+            width: '160px',
+            height: '160px',
+            borderBottom: '2px solid var(--accent)',
+            borderLeft: '2px solid var(--accent)',
+            borderRadius: '50%',
+          }}
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 text-center max-w-2xl px-6">
+        {/* Icon Box */}
+        <div className="flex justify-center mb-6">
+          <div 
+            className="relative flex items-center justify-center"
+            style={{
+              width: '64px',
+              height: '64px',
+              border: '2px solid var(--accent)',
+              boxShadow: `0 0 10px var(--accent-glow)`,
+            }}
           >
-            {walletStore.isConnecting ? 'Connecting...' : 'Connect Wallet'}
-          </AppButton>
-          {walletStore.error && (
-            <p className="text-xs font-mono mt-2 text-center" style={{ color: 'var(--error)' }}>
-              {walletStore.error}
-            </p>
-          )}
-          <p className="text-[10px] font-mono mt-2 text-center" style={{ color: 'var(--text-dim)' }}>
-            Supports MetaMask, Coinbase Wallet, Rabby, Brave
+            <div 
+              className="absolute inset-0"
+              style={{
+                border: '1px solid var(--accent)',
+                filter: 'blur(2px)',
+              }}
+            />
+            <Bot size={32} style={{ color: 'var(--accent-glow)', position: 'relative', zIndex: 1 }} />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 
+          className="font-rajdhani font-bold uppercase mb-2"
+          style={{
+            fontSize: '60px',
+            letterSpacing: '0.1em',
+            color: 'var(--text-main)',
+            textShadow: walletStore.darkMode ? '0 0 8px var(--accent-glow)' : 'none',
+          }}
+        >
+          MANDATOR
+        </h1>
+
+        {/* Gradient Divider */}
+        <div 
+          style={{
+            height: '4px',
+            width: '96px',
+            background: `linear-gradient(to right, transparent, var(--accent), transparent)`,
+            margin: '0 auto 24px',
+          }}
+        />
+
+        {/* Description */}
+        <p 
+          className="text-lg mb-2"
+          style={{ 
+            color: 'var(--text-dim)',
+            fontWeight: '300',
+          }}
+        >
+          Visual Pipeline Builder for Autonomous Spending Agents.
+        </p>
+
+        {/* Tagline */}
+        <p 
+          className="font-mono mb-10 block"
+          style={{
+            color: 'var(--accent)',
+            fontSize: '14px',
+          }}
+        >
+          SECURE • MODULAR • CHAIN-AGNOSTIC
+        </p>
+
+        {/* Connect Button */}
+        <AppButton
+          variant="primary"
+          icon={Wallet}
+          onClick={handleConnect}
+          disabled={walletStore.isConnecting}
+          className="inline-flex items-center justify-center"
+        >
+          {walletStore.isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        </AppButton>
+
+        {walletStore.error && (
+          <p className="text-xs font-mono mt-4 text-center" style={{ color: 'var(--error)' }}>
+            {walletStore.error}
           </p>
-        </TechCard>
+        )}
       </div>
     </div>
   );

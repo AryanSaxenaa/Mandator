@@ -819,3 +819,384 @@ Include a concise README.md with: setup instructions, how to get Groq API key, h
 
 **What was done**
 "Complete rewrite - real EVM wallet, Groq AI, full pipeline executor"
+
+
+**Note**- There were many more 
+## Session 3
+**Prompt received:** "The env are separate for frontend and backend,  I am deploying on vercel will this be a broblem?
+And why it says mock chain in frontend?"
+
+**What as anwered by Copilot**
+1. "Mock chain" in frontend .env
+It was a leftover VITE_CHAIN_ADAPTER=mock from the original scaffold. The current frontend code doesn't use it at all — the rewrite uses real EIP-1193 wallet injection (window.ethereum). I've removed it. Only VITE_API_URL remains.
+
+2. Deploying on Vercel with separate .env files
+Yes, this is a problem. Vercel is a frontend-only hosting platform — it can't run your Express/Node.js backend server. You have two options:
+
+Option	Frontend	Backend
+A (Recommended)	Deploy frontend on Vercel	Deploy backend on Railway, Render, or Fly.io (free tiers available)
+B	Deploy frontend on Vercel	Convert backend to Vercel Serverless Functions (requires significant restructuring — Express routes → /api/*.js functions, no persistent socket.io)
+Option A is straightforward:
+
+Frontend on Vercel: set VITE_API_URL to your backend's production URL (e.g. https://mandator-api.railway.app)
+Backend on Railway/Render: set PORT, GROQ_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, FRONTEND_URL (your Vercel domain for CORS)
+Both platforms let you configure environment variables in their dashboards — no .env files needed in production.
+
+
+
+## Session 4
+**Prompt received** "Okay I can deplou backend on railways and frontend on vercel but How to do that"
+
+**What was answered by copilot**
+REDACTED Because it had my Keys
+
+## Session 5
+**Prompt received**
+"You reached the start of the range
+Feb 21, 2026, 5:40 PM
+ 
+[Region: asia-southeast1]
+ 
+╭─────────────────╮
+│ Railpack 0.17.2 │
+╰─────────────────╯
+ 
+⚠ Script start.sh not found
+✖ Railpack could not determine how to build the app.
+ 
+The following languages are supported:
+Php
+Golang
+Java
+Rust
+Ruby
+Elixir
+Python
+Deno
+Dotnet
+Node
+Gleam
+Cpp
+Staticfile
+Shell
+ 
+The app contents that Railpack analyzed contains:
+ 
+./
+├── backend/
+├── frontend/
+├── .gitignore
+├── README.md
+├── VIBELOG.md
+├── mandator-ui-light-mode-deafault.js
+├── react-app-mandator-reference-ui-dark (1).js
+├── rules.md
+└── supabase_schema.sql
+ 
+Check out the docs for more information: https://railpack.com"
+
+**What Copilot did**
+Railway is looking at the repo root and doesn't know which folder is the app. I'll add a config file to tell it:
+
+Created railway.json
+Also need a root package.json so Nixpacks detects it as a Node project:
+
+Created package.json
+Now commit and push:
+
+
+## Session 6
+**Prompt received** "hey what workflow can I make for testing or demo recommend me a simple one"
+
+**What was answered** 
+"
+
+ Let me check the available node types to recommend a realistic demo pipeline: 
+
+Ran terminal command:  grep -r "nodeType\|type:" frontend/src/components/nodes/ --include="*.tsx" -l | head -20 && echo "---" && ls frontend/src/components/nodes/
+
+Here are **3 demo pipelines** from simplest to most interesting:
+
+---
+
+ 1. Hello World (simplest — 3 nodes)
+
+```
+Start → Log → End
+```
+
+- **Start**: Manual trigger
+- **Log**: Logs "Pipeline executed successfully"
+- **End**: Done
+
+Just verifies the pipeline engine works end-to-end.
+
+---
+
+ 2. Budget-Gated Payment (recommended demo — 5 nodes)
+
+```
+Manual Trigger → Daily Budget Gate → Spend Limit Check → Pay → Alert
+```
+
+- **Manual Trigger**: You click "Run" to start it
+- **Daily Budget Gate**: Set to e.g. `0.01 ETH` — blocks if already spent more today
+- **Spend Limit Check**: Per-tx limit of `0.005 ETH`
+- **Pay**: Send `0.001 ETH` to any address (use your own second wallet)
+- **Alert**: Notification "Payment sent!"
+
+This demos the core value prop: **autonomous spending with guardrails**. The wallet signing modal will pop up asking you to approve the transaction in MetaMask.
+
+---
+
+ 3. Timed Auto-Pay with AI (full showcase — 7 nodes)
+
+```
+Time Trigger → Balance Trigger → AI Decision → Whitelist Check → Pay → Log → Alert
+```
+
+- **Time Trigger**: Every 5 minutes (`*/5 * * * *`)
+- **Balance Trigger**: Only proceed if vault balance > `0.005 ETH`
+- **AI Decision**: Prompt: "Should I proceed with this payment? The amount is 0.001 ETH" (Groq will decide yes/no)
+- **Whitelist Check**: Only allow payments to a specific address
+- **Pay**: `0.001 ETH` to the whitelisted address
+- **Log**: Record result
+- **Alert**: "Auto-payment executed"
+
+---
+
+**For a first test, go with #2.** It's simple enough to set up in 2 minutes on the canvas but shows the real product — budget gates, spend limits, and wallet signing. Just make sure you have some testnet ETH (Sepolia) in your MetaMask before running it.
+
+
+## Session 7
+**Prompt Received** "I think something is wrong with the inputs in Daily Budget Gate and Spend Limit Check and may be in more nodes because I am not able to enter numbers, only alphabets are being entered
+I want you to check the data flow and user flow for All three pipleines make sure no error or fault exists like previous one, so that they can be executed in one go
+
+Here are **3 demo pipelines** from simplest to most interesting:
+
+---
+
+ 1. Hello World (simplest — 3 nodes)
+
+```
+Start → Log → End
+```
+
+- **Start**: Manual trigger
+- **Log**: Logs "Pipeline executed successfully"
+- **End**: Done
+
+Just verifies the pipeline engine works end-to-end.
+
+---
+
+ 2. Budget-Gated Payment (recommended demo — 5 nodes)
+
+```
+Manual Trigger → Daily Budget Gate → Spend Limit Check → Pay → Alert
+```
+
+- **Manual Trigger**: You click "Run" to start it
+- **Daily Budget Gate**: Set to e.g. `0.01 ETH` — blocks if already spent more today
+- **Spend Limit Check**: Per-tx limit of `0.005 ETH`
+- **Pay**: Send `0.001 ETH` to any address (use your own second wallet)
+- **Alert**: Notification "Payment sent!"
+
+This demos the core value prop: **autonomous spending with guardrails**. The wallet signing modal will pop up asking you to approve the transaction in MetaMask.
+
+---
+
+ 3. Timed Auto-Pay with AI (full showcase — 7 nodes)
+
+```
+Time Trigger → Balance Trigger → AI Decision → Whitelist Check → Pay → Log → Alert
+```
+
+- **Time Trigger**: Every 5 minutes (`*/5 * * * *`)
+- **Balance Trigger**: Only proceed if vault balance > `0.005 ETH`
+- **AI Decision**: Prompt: "Should I proceed with this payment? The amount is 0.001 ETH" (Groq will decide yes/no)
+- **Whitelist Check**: Only allow payments to a specific address
+- **Pay**: `0.001 ETH` to the whitelisted address
+- **Log**: Record result
+- **Alert**: "Auto-payment executed"
+
+---
+
+**For a first test, go with #2.** It's simple enough to set up in 2 minutes on the canvas but shows the real product — budget gates, spend limits, and wallet signing. Just make sure you have some testnet ETH (Sepolia) in your MetaMask before running it."
+
+
+**What was done by copilot**
+
+
+  
+
+Created 5 todos
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#1-1), lines 1 to 100
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#100-100), lines 100 to 200
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#200-200), lines 200 to 360
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#360-360), lines 360 to 557
+
+Now let me check the frontend side — how config values are saved, particularly the key mismatch between what the frontend sends and what the executor expects: 
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/frontend/src/components/NodeConfigPanel.tsx#230-230), lines 230 to 270
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/frontend/src/components/NodeConfigPanel.tsx#270-270), lines 270 to 330
+
+Now I can see all the **critical mismatches**. Let me also check the saveJournalEntry and saveNotification signatures: 
+
+Searched for regex `saveJournalEntry|saveNotification` (`**/backend/db.js`), 2 results
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/db.js#100-100), lines 100 to 175
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/db.js#175-175), lines 175 to 305
+
+Now let me check the scheduler and the agents route for the "Run" flow:  
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/routes/agents.js)
+
+Starting: *Fix all discovered issues* (5/5)
+
+I found **7 critical bugs** that would prevent all 3 pipelines from working. Here's the analysis and fix:
+
+ Bugs Found
+
+| # | Pipeline | Node | Bug | Impact |
+|---|----------|------|-----|--------|
+| 1 | 2,3 | **Daily Budget Gate** | Executor reads `config.dailyLimitWei` but frontend saves `config.dailyBudget` (ETH, not Wei) | Gate always passes (reads `0`) |
+| 2 | 2,3 | **Spend Limit Check** | Executor reads `config.maxAmountWei` but frontend saves `config.maxAmount` (ETH) | Limit always `0`, always passes |
+| 3 | 2,3 | **Pay Node** | Executor reads `config.amountWei` but frontend saves `config.amount` (ETH) | Amount is `0`, tx fails with "Amount must be greater than 0" |
+| 4 | 3 | **Balance Trigger** | Executor reads `config.thresholdWei` but frontend saves `config.threshold` (ETH) | Threshold always `0`, always passes |
+| 5 | 3 | **Whitelist Check** | Executor reads `config.recipients` (array) but frontend saves `config.addresses` (newline-separated string) | Whitelist empty, always passes |
+| 6 | 3 | **Cooldown Timer** | Executor reads `config.cooldownMinutes` but frontend saves `config.cooldownSeconds` | Cooldown 60× too long |
+| 7 | 2,3 | **Alert Node** | Executor calls `saveNotification` with `severity` field but `notificationToRow` maps `type` — no `severity` column exists | Notification saved without severity |
+
+The root cause is that **the frontend stores user-friendly ETH values** but the **executor expects Wei values**. The executor needs to convert ETH→Wei at runtime. 
+
+Replacing 7 lines with 21 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js)
+
+
+```
+
+```
+Now fix all 7 node handlers:  
+
+Replacing 51 lines with 57 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js)
+
+
+```
+
+```
+Now let me also check that the executor's `saveJournalEntry` calls include a `status` field (required by the DB):  
+
+Ran terminal command:  grep -n "saveJournalEntry" backend/executor.js
+
+Let me check the main loop's `saveJournalEntry` call — it uses spread `...result` which might not include `status`:   
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#85-85), lines 85 to 106
+
+The main loop spreads `result` into the journal entry. Most node results return `{ edge, result }` but NOT a `status` field. The journal table has `status TEXT NOT NULL` — so every insert without `status` will fail.
+
+Let me fix this by adding a default `status` to the journal entry:  
+
+Replacing 10 lines with 11 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js)
+
+
+```
+
+```
+Now also fix the error journal entry (line ~121) which calls `event: 'error'` but should use `status`:    
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#115-115), lines 115 to 140
+
+Replacing 12 lines with 12 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js)
+
+
+```
+
+```
+Also need to check the AI Decision error journal entry:    
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#270-270), lines 270 to 300
+
+Replacing 11 lines with 12 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js)
+
+
+```
+
+```
+Now let me also check the `journalToRow` function — it needs to handle the `result` field properly. Currently it does `JSON.stringify(j.result)` but for node evaluations `result` is a string like `'started'`, not an object:  
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/db.js#255-255), lines 255 to 275
+
+The `result` column is `JSONB` in Supabase. `JSON.stringify('started')` → `'"started"'` which is valid JSONB, so that's OK. But Supabase's client will auto-serialize JSONB, so double-stringify would be a problem. Let me fix it:   
+
+Replacing 1 lines with 1 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/db.js)
+
+
+```
+
+```
+Now let me also check the `journal` table schema — the executor passes `nodeName` but there's no `node_name` column. Let me check if `journalToRow` handles this:  
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/db.js#260-260), lines 260 to 280
+
+Good — `journalToRow` only picks specific columns, so `nodeName`, `edge`, `halt`, `recipient`, `explorerUrl` from the spread will be silently ignored (not sent to DB). That's fine since those columns don't exist.
+
+But wait — the executor's `saveJournalEntry` for the Pay Node passes `explorerUrl` and `status: 'confirmed'` separately. Let me verify those pay-specific journal entries pass the right fields:   
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js#310-310), lines 310 to 395
+
+The `explorerUrl` is passed to `saveJournalEntry` but `journalToRow` doesn't map it — it'll be silently dropped. That's acceptable since there's no column for it, and it's emitted via socket anyway.
+
+One more issue — `dailySpent` and `totalSpent` in the agent are stored as strings (`TEXT` in DB), but the executor does arithmetic `(agent.dailySpent || 0) + amount`. Let me fix: 
+
+Replacing 5 lines with 5 lines in [](file:///c%3A/Users/91730/Documents/Mandator/backend/executor.js)
+
+Continue to iterate?
+[object Object]
+
+Made changes.
+
+
+## Session 8
+**Prompt received** "Why it is showing unknown network?
+on which testnet platform is?"
+
+**What Copilot answered**
+Let me check the Settings page and wallet store to see how the network name is displayed:  
+
+Searched for files matching `**/Settings.tsx`, 1 match
+
+Searched for regex `Unknown Network|chainId|0x152` (`**/frontend/src/**`), 20 results
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/frontend/src/store/walletStore.ts#1-1), lines 1 to 40
+
+Found it. **Chain ID `0x152` (338 decimal) is Cronos Testnet**. The app shows "Unknown Network" because it's not in the `CHAIN_NAMES` mapping. Let me add it: 
+
+Replacing 6 lines with 7 lines in [](file:///c%3A/Users/91730/Documents/Mandator/frontend/src/store/walletStore.ts)
+
+
+```
+
+```
+
+
+Read [](file:///c%3A/Users/91730/Documents/Mandator/frontend/src/adapters/evm-injected.ts#35-35), lines 35 to 45
+
+Also, Cronos uses **CRO** as its native currency, not ETH. Let me update the symbol function: 
+
+Replacing 4 lines with 5 lines in [](file:///c%3A/Users/91730/Documents/Mandator/frontend/src/adapters/evm-injected.ts)
+
+
+```
+
+```
+
+
+Ran terminal command:  git add -A && git commit -m "add cronos testnet support (0x152)" && git push origin main
+
+Made changes.
