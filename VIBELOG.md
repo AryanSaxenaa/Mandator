@@ -1220,3 +1220,13 @@ how to run manual trigger i see no run button
 Also nothing is happening when I am clicking on clear or deploy,
 I am able to find many errors and faults I want you to do a full audit and fix these
 
+## Session 13
+User prompt: "When I clicked on save I got this error- Objective Replace a non-functional PHP site with a cloud-native, AI-driven web app built to last 10–12 years. No logs on vercel or railway"
+
+Diagnosis: Save was failing (exact error unknown since no Railway logs appeared — request not reaching server). Root cause is rigid single-string CORS config blocking POST preflight if FRONTEND_URL env var has any mismatch. "No Vercel logs" is expected for a static SPA.
+
+Changes:
+- backend/server.js: replaced `cors({ origin: FRONTEND_URL })` with a dynamic origin function that accepts the configured URL, any `mandator*.vercel.app` subdomain, or any Vercel preview URL. Added request logging middleware so every request (including blocked CORS preflights) logs to Railway stdout.
+- frontend/src/lib/api.ts: wrapped fetch in try/catch to surface network/CORS errors with the target URL in the message (previously "Failed to fetch" with no context).
+
+Commit: 2bee333
