@@ -39,6 +39,7 @@ export default function Canvas() {
   const [pipelineName, setPipelineName] = useState('New Pipeline');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showCreateAgent, setShowCreateAgent] = useState(false);
+  const [runAfterDeploy, setRunAfterDeploy] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [agentVault, setAgentVault] = useState('');
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -194,11 +195,22 @@ export default function Canvas() {
     });
     await agentStore.deployAgent(agent.id);
     setShowCreateAgent(false);
-    navigate(`/agent/${agent.id}`);
+    if (runAfterDeploy) {
+      setRunAfterDeploy(false);
+      executionStore.resetExecution();
+      await agentStore.runAgent(agent.id);
+    } else {
+      navigate(`/agent/${agent.id}`);
+    }
   };
 
   const handleRun = async () => {
-    if (!linkedAgent) return;
+    if (!linkedAgent) {
+      // No agent yet — open the create-agent modal and run immediately after deploying
+      setRunAfterDeploy(true);
+      setShowCreateAgent(true);
+      return;
+    }
     executionStore.resetExecution();
     await agentStore.runAgent(linkedAgent.id);
   };
@@ -302,9 +314,9 @@ export default function Canvas() {
 
           <AppButton variant="secondary" icon={Trash2} onClick={handleClear}>Clear</AppButton>
           <AppButton variant="secondary" icon={Save} onClick={handleSave}>Save</AppButton>
-          {linkedAgent && (
-            <AppButton variant="secondary" icon={Play} onClick={handleRun}>Run</AppButton>
-          )}
+          <AppButton variant="secondary" icon={Play} onClick={handleRun}
+            title={linkedAgent ? 'Run pipeline now' : 'Deploy pipeline as agent, then run'}
+          >Run</AppButton>
           <AppButton variant="primary" icon={Rocket} onClick={handleDeploy}>Deploy</AppButton>
         </div>
 
@@ -355,7 +367,14 @@ export default function Canvas() {
       {showCreateAgent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <TechCard className="w-96">
-            <h3 className="font-rajdhani font-bold text-lg uppercase tracking-wider mb-4" style={{ color: 'var(--text-main)' }}>Create Agent</h3>
+            <h3 className="font-rajdhani font-bold text-lg uppercase tracking-wider mb-1" style={{ color: 'var(--text-main)' }}>
+              {runAfterDeploy ? 'Deploy & Run' : 'Create Agent'}
+            </h3>
+            <p className="text-xs font-mono mb-4" style={{ color: 'var(--text-dim)' }}>
+              {runAfterDeploy
+                ? 'Give this pipeline an agent name, then it will deploy and run immediately.'
+                : 'Create an agent to deploy and manage this pipeline.'}
+            </p>
             <div className="space-y-3 mb-4">
               <div>
                 <label className="text-xs font-mono block mb-1" style={{ color: 'var(--text-dim)' }}>Agent Name</label>
@@ -379,8 +398,10 @@ export default function Canvas() {
               </div>
             </div>
             <div className="flex gap-2">
-              <AppButton variant="secondary" onClick={() => setShowCreateAgent(false)} className="flex-1">Cancel</AppButton>
-              <AppButton variant="primary" onClick={handleCreateAndDeploy} disabled={!agentName} className="flex-1">Deploy</AppButton>
+              <AppButton variant="secondary" onClick={() => { setShowCreateAgent(false); setRunAfterDeploy(false); }} className="flex-1">Cancel</AppButton>
+              <AppButton variant="primary" onClick={handleCreateAndDeploy} disabled={!agentName} className="flex-1">
+                {runAfterDeploy ? 'Deploy & Run' : 'Deploy'}
+              </AppButton>
             </div>
           </TechCard>
         </div>
