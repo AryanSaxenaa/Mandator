@@ -817,3 +817,5 @@ If a feature needs a UI component that doesn't exist yet, create it.
 Include package.json for both frontend and backend with exact dependency versions.
 Include a concise README.md with: setup instructions, how to get Groq API key, how to run both servers, how to test the webhook trigger with curl."
 
+**What was done**
+"Complete rewrite - real EVM wallet, Groq AI, full pipeline executor"
