@@ -7,6 +7,7 @@ const CHAIN_NAMES: Record<string, string> = {
   '0xaa36a7': 'Sepolia',
   '0x66eee': 'Arbitrum Sepolia',
   '0xa4b1': 'Arbitrum One',
+  '0x152': 'Cronos Testnet',
 };
 
 interface WalletState {

@@ -34,8 +34,9 @@ function formatEther(wei: bigint): string {
 }
 
 function getSymbol(chainId: string | null): string {
-  if (chainId === '0xa4b1' || chainId === '0x66eee') return 'ETH';
-  return 'ETH';
+  if (chainId === '0x152') return 'CRO'; // Cronos Testnet
+  if (chainId === '0x19') return 'CRO';  // Cronos Mainnet
+  return 'ETH'; // Default: Ethereum, Sepolia, Arbitrum, etc.
 }
 
 class EVMInjectedAdapter implements MandatorAdapter {
