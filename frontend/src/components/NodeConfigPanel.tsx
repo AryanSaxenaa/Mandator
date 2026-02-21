@@ -219,6 +219,9 @@ function renderNodeConfig(
           <ConfigField label="Threshold (ETH)">
             <NumberInput value={config.threshold ?? ''} onChange={v => update('threshold', v)} min={0} step={0.001} placeholder="0.1" />
           </ConfigField>
+          <ConfigField label="Poll Interval (seconds)">
+            <NumberInput value={config.pollIntervalSeconds ?? 60} onChange={v => update('pollIntervalSeconds', v)} min={10} step={10} placeholder="60" />
+          </ConfigField>
         </>
       );
 

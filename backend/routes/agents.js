@@ -80,7 +80,10 @@ export function createAgentsRouter(io, scheduler) {
 
   router.delete('/:id', async (req, res) => {
     try {
-      if (scheduler) scheduler.cancelCronJob(req.params.id);
+      if (scheduler) {
+        scheduler.cancelCronJob(req.params.id);
+        scheduler.cancelBalancePoll(req.params.id);
+      }
       await removeAgent(req.params.id);
       res.status(204).end();
     } catch (err) {
@@ -94,14 +97,20 @@ export function createAgentsRouter(io, scheduler) {
       if (scheduler) {
         try {
           const pipeline = await getPipeline(agent.pipelineId);
-          const triggerNode = pipeline.nodes.find(n =>
+          const timeTriggerNode = pipeline.nodes.find(n =>
             n.type === 'timeTriggerNode' || n.type === 'TIME_TRIGGER'
           );
-          if (triggerNode && triggerNode.data?.config) {
-            const cronExpr = scheduler.parseTriggerToCron(triggerNode.data.config);
+          if (timeTriggerNode && timeTriggerNode.data?.config) {
+            const cronExpr = scheduler.parseTriggerToCron(timeTriggerNode.data.config);
             scheduler.registerCronJob(agent.id, agent.pipelineId, cronExpr, io);
           }
-        } catch { /* no time trigger */ }
+          const balanceTriggerNode = pipeline.nodes.find(n =>
+            n.type === 'balanceTriggerNode' || n.type === 'BALANCE_TRIGGER'
+          );
+          if (balanceTriggerNode && balanceTriggerNode.data?.config) {
+            scheduler.registerBalancePoll(agent.id, agent.pipelineId, balanceTriggerNode.data.config, io);
+          }
+        } catch { /* no trigger nodes */ }
       }
       res.json(agent);
     } catch (err) {
@@ -111,7 +120,10 @@ export function createAgentsRouter(io, scheduler) {
 
   router.post('/:id/pause', async (req, res) => {
     try {
-      if (scheduler) scheduler.cancelCronJob(req.params.id);
+      if (scheduler) {
+        scheduler.cancelCronJob(req.params.id);
+        scheduler.cancelBalancePoll(req.params.id);
+      }
       const agent = await updateAgent(req.params.id, { status: 'paused' });
       res.json(agent);
     } catch (err) {

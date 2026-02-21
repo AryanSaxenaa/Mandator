@@ -3,6 +3,7 @@ import { getAgents, getPipeline } from './db.js';
 import { executePipeline } from './executor.js';
 
 const jobs = new Map();
+const balancePolls = new Map();
 
 export function parseTriggerToCron(config) {
   const type = config.intervalType || 'hours';
@@ -55,18 +56,49 @@ export function cancelCronJob(agentId) {
   }
 }
 
+/**
+ * Poll balance trigger nodes on a fixed interval (default 60s).
+ * Each time it fires, the executor checks agent.lastKnownBalance against the
+ * threshold — if the condition is not met the pipeline halts at that node.
+ */
+export function registerBalancePoll(agentId, pipelineId, triggerConfig, io) {
+  cancelBalancePoll(agentId);
+  const intervalMs = Math.max(10, parseInt(triggerConfig.pollIntervalSeconds) || 60) * 1000;
+  const id = setInterval(() => {
+    executePipeline(pipelineId, 'balance_poll', {}, io).catch(err => {
+      console.error(`Balance poll failed for agent ${agentId}:`, err.message);
+    });
+  }, intervalMs);
+  balancePolls.set(agentId, id);
+  console.log(`Balance poll registered for agent ${agentId} every ${intervalMs / 1000}s`);
+}
+
+export function cancelBalancePoll(agentId) {
+  const existing = balancePolls.get(agentId);
+  if (existing) {
+    clearInterval(existing);
+    balancePolls.delete(agentId);
+  }
+}
+
 export async function initScheduler(io) {
   const agents = await getAgents();
   for (const agent of agents) {
     if (agent.status !== 'active') continue;
     try {
       const pipeline = await getPipeline(agent.pipelineId);
-      const triggerNode = pipeline.nodes.find(n =>
+      const timeTriggerNode = pipeline.nodes.find(n =>
         n.type === 'timeTriggerNode' || n.type === 'TIME_TRIGGER'
       );
-      if (triggerNode && triggerNode.data?.config) {
-        const cronExpr = parseTriggerToCron(triggerNode.data.config);
+      if (timeTriggerNode && timeTriggerNode.data?.config) {
+        const cronExpr = parseTriggerToCron(timeTriggerNode.data.config);
         registerCronJob(agent.id, agent.pipelineId, cronExpr, io);
+      }
+      const balanceTriggerNode = pipeline.nodes.find(n =>
+        n.type === 'balanceTriggerNode' || n.type === 'BALANCE_TRIGGER'
+      );
+      if (balanceTriggerNode && balanceTriggerNode.data?.config) {
+        registerBalancePoll(agent.id, agent.pipelineId, balanceTriggerNode.data.config, io);
       }
     } catch (err) {
       console.error(`Failed to init scheduler for agent ${agent.id}:`, err.message);
@@ -74,4 +106,4 @@ export async function initScheduler(io) {
   }
 }
 
-export default { initScheduler, registerCronJob, cancelCronJob, parseTriggerToCron };
+export default { initScheduler, registerCronJob, cancelCronJob, parseTriggerToCron, registerBalancePoll, cancelBalancePoll };

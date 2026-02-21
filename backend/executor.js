@@ -222,10 +222,27 @@ async function evaluateNode(node, context, io, pipeline, agent) {
       const nextPayNode = findNextPayNode(node.id, pipeline);
       const payAmount = nextPayNode ? ethToWei(nextPayNode.data?.config?.amount || nextPayNode.data?.config?.amountWei || 0) : 0n;
       const passes = limit === 0n || payAmount <= limit;
-      const edge = passes ? 'PASS' : 'BLOCK';
-      if (passes) emitComplete('within_limit', edge);
-      else emitBlocked('exceeds_limit');
-      return { edge, result: passes ? 'within_limit' : 'exceeds_limit' };
+      if (passes) {
+        emitComplete('within_limit', 'PASS');
+        return { edge: 'PASS', result: 'within_limit' };
+      }
+      // Exceeded — check onExceed policy
+      if (config.onExceed === 'alert') {
+        await saveNotification({
+          id: randomUUID(),
+          agentId: context.agentId,
+          type: 'warning',
+          title: 'Spend Limit Exceeded',
+          message: `Transaction exceeds limit of ${config.maxAmount || 0} ETH. Continuing in alert-only mode.`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+        io.to(roomId).emit('notification:new', { message: 'Spend limit exceeded — alert mode, continuing' });
+        emitComplete('exceeds_limit_alert_continue', 'PASS');
+        return { edge: 'PASS', result: 'exceeds_limit_alert_continue' };
+      }
+      emitBlocked('exceeds_limit');
+      return { edge: 'BLOCK', result: 'exceeds_limit' };
     }
 
     case 'dailyBudgetGateNode':
@@ -280,7 +297,23 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'AI_DECISION': {
       emitExecuting();
       const systemPrompt = 'You are a spending policy evaluator. Your only job is to evaluate whether a transaction should proceed. Respond with exactly one word: YES or NO. Nothing else.';
-      const userPrompt = `Pipeline context: ${JSON.stringify(context, null, 2)}\n\nUser policy question: ${config.prompt}\n\nRespond YES or NO only.`;
+      let contextStr;
+      if (config.contextTemplate) {
+        contextStr = config.contextTemplate
+          .replace('{agentName}', context.agentName || '')
+          .replace('{amount}', context.lastTxAmount || '0')
+          .replace('{address}', context.lastTxRecipient || '')
+          .replace('{dailySpent}', context.dailySpent?.toString() || '0')
+          .replace('{timestamp}', context.timestamp || '');
+      } else {
+        contextStr = JSON.stringify({
+          dailySpent: context.dailySpent,
+          lastTxAmount: context.lastTxAmount,
+          lastTxRecipient: context.lastTxRecipient,
+          timestamp: context.timestamp,
+        }, null, 2);
+      }
+      const userPrompt = `Context: ${contextStr}\n\nPolicy question: ${config.prompt || 'Should this transaction proceed?'}\n\nRespond YES or NO only.`;
       let decision;
       try {
         const raw = await callGroq(systemPrompt, userPrompt);
@@ -424,8 +457,18 @@ async function evaluateNode(node, context, io, pipeline, agent) {
     case 'AUTO_TOPUP': {
       emitExecuting();
       const journalId = randomUUID();
-      const to = agent.vaultAddress;
+      const to = config.targetAddress || agent.vaultAddress;
       const amountWei = ethToWei(config.topupAmount || config.amountWei || 0).toString();
+
+      // Skip topup if balance already meets the minimum threshold
+      const minBalanceWei = ethToWei(config.minBalance || 0);
+      if (minBalanceWei > 0n) {
+        const currentBalance = BigInt(agent.lastKnownBalance || '0');
+        if (currentBalance >= minBalanceWei) {
+          emitComplete('topup_skipped_balance_sufficient', 'default');
+          return { edge: 'default', result: 'topup_skipped_balance_sufficient' };
+        }
+      }
 
       if (!to || !/^0x[0-9a-fA-F]{40}$/.test(to)) {
         io.to(roomId).emit('node:error', { nodeId: node.id, error: 'Invalid vault address' });
@@ -555,14 +598,16 @@ async function evaluateNode(node, context, io, pipeline, agent) {
       emitExecuting();
       const template = config.message || 'Log entry';
       const resolved = template.replace(/{(\w+)}/g, (_, key) => context[key]?.toString() || '');
+      const logLevel = config.level || 'info';
+      io.to(roomId).emit('log:entry', { nodeId: node.id, level: logLevel, message: resolved });
       emitComplete('logged', 'default');
-      return { edge: 'default', result: resolved };
+      return { edge: 'default', result: `[${logLevel.toUpperCase()}] ${resolved}` };
     }
 
     case 'pausePipelineNode':
     case 'PAUSE_PIPELINE': {
       emitExecuting();
-      const message = config.message || 'Pipeline paused by policy';
+      const message = config.reason || config.message || 'Pipeline paused by policy';
       await updateAgent(context.agentId, { status: 'paused' });
       await saveNotification({
         id: randomUUID(),
