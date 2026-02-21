@@ -26,6 +26,10 @@ function TextInput({ value, onChange, placeholder }: { value: string; onChange: 
       value={value}
       onChange={e => onChange(e.target.value)}
       onKeyDown={e => e.stopPropagation()}
+      onKeyUp={e => e.stopPropagation()}
+      onKeyPress={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      onFocus={e => e.stopPropagation()}
       placeholder={placeholder}
       className="w-full px-2 py-1.5 text-xs font-mono outline-none"
       style={{ background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border-tech)' }}
@@ -40,6 +44,10 @@ function NumberInput({ value, onChange, min, step, placeholder }: { value: numbe
       value={value}
       onChange={e => onChange(Number(e.target.value))}
       onKeyDown={e => e.stopPropagation()}
+      onKeyUp={e => e.stopPropagation()}
+      onKeyPress={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      onFocus={e => e.stopPropagation()}
       min={min}
       step={step}
       placeholder={placeholder}
@@ -54,6 +62,9 @@ function SelectInput({ value, onChange, options }: { value: string; onChange: (v
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
+      onKeyDown={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      onFocus={e => e.stopPropagation()}
       className="w-full px-2 py-1.5 text-xs font-mono outline-none"
       style={{ background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border-tech)' }}
     >
@@ -68,6 +79,10 @@ function TextArea({ value, onChange, placeholder, rows }: { value: string; onCha
       value={value}
       onChange={e => onChange(e.target.value)}
       onKeyDown={e => e.stopPropagation()}
+      onKeyUp={e => e.stopPropagation()}
+      onKeyPress={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      onFocus={e => e.stopPropagation()}
       placeholder={placeholder}
       rows={rows || 3}
       className="w-full px-2 py-1.5 text-xs font-mono outline-none resize-none"

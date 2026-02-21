@@ -200,7 +200,16 @@ export default function Canvas() {
   const updateNodeConfig = useCallback((nodeId: string, config: Record<string, unknown>) => {
     setNodes(nds => nds.map(n => {
       if (n.id === nodeId) {
-        return { ...n, data: { ...n.data, config } };
+        // Extract __label if present and apply it to data.label
+        const { __label, ...restConfig } = config;
+        const newData = { 
+          ...n.data, 
+          config: restConfig 
+        };
+        if (__label !== undefined) {
+          newData.label = __label as string;
+        }
+        return { ...n, data: newData };
       }
       return n;
     }));
