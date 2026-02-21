@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Node } from 'reactflow';
 import { Copy, ExternalLink, Zap } from 'lucide-react';
 import { AppButton } from './ui/TechCard';
@@ -38,16 +38,43 @@ function TextInput({ value, onChange, placeholder }: { value: string; onChange: 
 }
 
 function NumberInput({ value, onChange, min, step, placeholder }: { value: number | string; onChange: (v: number) => void; min?: number; step?: number; placeholder?: string }) {
+  // Use local string state so intermediate values like "0." or "0.02" don't get clobbered
+  // The parent component is remounted via key={node.id} when the node changes, so this
+  // local state always initialises fresh for each node.
+  const toStr = (v: number | string) =>
+    v !== undefined && v !== null && v !== '' ? String(v) : '';
+
+  const [localValue, setLocalValue] = useState(() => toStr(value));
+  const isEditing = useRef(false);
+
+  // Sync from external only when NOT focused (e.g. programmatic reset)
+  useEffect(() => {
+    if (!isEditing.current) {
+      setLocalValue(toStr(value));
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setLocalValue(raw);
+    const parsed = parseFloat(raw);
+    if (raw !== '' && !isNaN(parsed) && isFinite(parsed)) {
+      onChange(parsed);
+    }
+  };
+
   return (
     <input
-      type="number"
-      value={value}
-      onChange={e => onChange(Number(e.target.value))}
+      type="text"
+      inputMode="decimal"
+      value={localValue}
+      onChange={handleChange}
+      onFocus={e => { isEditing.current = true; e.stopPropagation(); }}
+      onBlur={() => { isEditing.current = false; }}
       onKeyDown={e => e.stopPropagation()}
       onKeyUp={e => e.stopPropagation()}
       onKeyPress={e => e.stopPropagation()}
       onMouseDown={e => e.stopPropagation()}
-      onFocus={e => e.stopPropagation()}
       min={min}
       step={step}
       placeholder={placeholder}
@@ -190,7 +217,7 @@ function renderNodeConfig(
             />
           </ConfigField>
           <ConfigField label="Threshold (ETH)">
-            <NumberInput value={config.threshold || ''} onChange={v => update('threshold', v)} min={0} step={0.001} placeholder="0.1" />
+            <NumberInput value={config.threshold ?? ''} onChange={v => update('threshold', v)} min={0} step={0.001} placeholder="0.1" />
           </ConfigField>
         </>
       );
@@ -256,7 +283,7 @@ function renderNodeConfig(
       return (
         <>
           <ConfigField label="Max Amount Per Tx (ETH)">
-            <NumberInput value={config.maxAmount || ''} onChange={v => update('maxAmount', v)} min={0} step={0.001} placeholder="0.5" />
+            <NumberInput value={config.maxAmount ?? ''} onChange={v => update('maxAmount', v)} min={0} step={0.001} placeholder="0.5" />
           </ConfigField>
           <ConfigField label="On Exceed">
             <SelectInput
@@ -275,7 +302,7 @@ function renderNodeConfig(
       return (
         <>
           <ConfigField label="Daily Budget (ETH)">
-            <NumberInput value={config.dailyBudget || ''} onChange={v => update('dailyBudget', v)} min={0} step={0.01} placeholder="1.0" />
+            <NumberInput value={config.dailyBudget ?? ''} onChange={v => update('dailyBudget', v)} min={0} step={0.01} placeholder="1.0" />
           </ConfigField>
         </>
       );
@@ -332,7 +359,7 @@ function renderNodeConfig(
             <TextInput value={config.recipientAddress || ''} onChange={v => update('recipientAddress', v)} placeholder="0x..." />
           </ConfigField>
           <ConfigField label="Amount (ETH)">
-            <NumberInput value={config.amount || ''} onChange={v => update('amount', v)} min={0} step={0.0001} placeholder="0.01" />
+            <NumberInput value={config.amount ?? ''} onChange={v => update('amount', v)} min={0} step={0.0001} placeholder="0.01" />
           </ConfigField>
           <ConfigField label="Memo">
             <TextInput value={config.memo || ''} onChange={v => update('memo', v)} placeholder="Payment for services" />
@@ -347,10 +374,10 @@ function renderNodeConfig(
             <TextInput value={config.targetAddress || ''} onChange={v => update('targetAddress', v)} placeholder="0x..." />
           </ConfigField>
           <ConfigField label="Min Balance Threshold (ETH)">
-            <NumberInput value={config.minBalance || ''} onChange={v => update('minBalance', v)} min={0} step={0.001} placeholder="0.05" />
+            <NumberInput value={config.minBalance ?? ''} onChange={v => update('minBalance', v)} min={0} step={0.001} placeholder="0.05" />
           </ConfigField>
           <ConfigField label="Topup Amount (ETH)">
-            <NumberInput value={config.topupAmount || ''} onChange={v => update('topupAmount', v)} min={0} step={0.001} placeholder="0.1" />
+            <NumberInput value={config.topupAmount ?? ''} onChange={v => update('topupAmount', v)} min={0} step={0.001} placeholder="0.1" />
           </ConfigField>
         </>
       );

@@ -37,7 +37,7 @@ export default function Canvas() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [pipelineName, setPipelineName] = useState('New Pipeline');
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showCreateAgent, setShowCreateAgent] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [agentVault, setAgentVault] = useState('');
@@ -47,6 +47,12 @@ export default function Canvas() {
 
   const pipelineId = searchParams.get('id') || pipelineStore.activePipelineId;
   const linkedAgent = agentStore.agents.find(a => a.pipelineId === pipelineId);
+
+  // Always derive selectedNode from the live nodes array so it stays fresh on every config update
+  const selectedNode = useMemo(
+    () => (selectedNodeId ? nodes.find(n => n.id === selectedNodeId) ?? null : null),
+    [nodes, selectedNodeId],
+  );
 
   useAgentSocket(linkedAgent?.id || null);
 
@@ -112,11 +118,11 @@ export default function Canvas() {
   }, [pipelineId, nodes, edges]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    setSelectedNode(node);
+    setSelectedNodeId(node.id);
   }, []);
 
   const onPaneClick = useCallback(() => {
-    setSelectedNode(null);
+    setSelectedNodeId(null);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -333,6 +339,7 @@ export default function Canvas() {
       <div className="w-72 shrink-0 p-4 overflow-y-auto" style={{ borderLeft: '1px solid var(--border-tech)', background: 'var(--bg-panel)' }}>
         {selectedNode ? (
           <NodeConfigPanel
+            key={selectedNode.id}
             node={selectedNode}
             onConfigChange={(config) => updateNodeConfig(selectedNode.id, config)}
             linkedAgent={linkedAgent}
