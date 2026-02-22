@@ -2,6 +2,28 @@ import { create } from 'zustand';
 import type { Node, Edge } from 'reactflow';
 import * as api from '../lib/api';
 
+// Strip React Flow internal properties before serialising to JSON.
+// Raw Node objects contain circular refs (__rf, internals) that crash JSON.stringify.
+function sanitizeNode(n: Node): object {
+  return {
+    id: n.id,
+    type: n.type,
+    position: { x: n.position.x, y: n.position.y },
+    data: n.data,
+  };
+}
+
+function sanitizeEdge(e: Edge): object {
+  return {
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    ...(e.sourceHandle != null && { sourceHandle: e.sourceHandle }),
+    ...(e.targetHandle != null && { targetHandle: e.targetHandle }),
+    ...(e.type && { type: e.type }),
+  };
+}
+
 export interface Pipeline {
   id: string;
   name: string;
@@ -44,7 +66,11 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   },
 
   savePipeline: async (id, nodes, edges) => {
-    const updated = await api.updatePipeline(id, { nodes, edges, updatedAt: new Date().toISOString() });
+    const updated = await api.updatePipeline(id, {
+      nodes: nodes.map(sanitizeNode),
+      edges: edges.map(sanitizeEdge),
+      updatedAt: new Date().toISOString(),
+    });
     set({
       pipelines: get().pipelines.map(p => p.id === id ? { ...p, ...updated } : p),
       isDirty: false,

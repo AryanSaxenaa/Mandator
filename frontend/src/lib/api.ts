@@ -1,11 +1,16 @@
-// In production set VITE_API_URL to your Railway backend URL, e.g.:
-// https://mandator-production.up.railway.app  (include https://)
-// Leave empty in dev — Vite proxy handles /api/* → localhost:3001
+// Resolves the backend (Railway) base URL.
+// If VITE_API_URL is missing or mistakenly points at a Vercel frontend domain,
+// fall back to the hard-coded Railway URL so the app always works.
+const RAILWAY_URL = 'https://mandator-production.up.railway.app';
+
 function resolveBase(): string {
   let url = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-  if (!url) return '';
-  url = url.replace(/\/$/, ''); // strip trailing slash
-  if (!/^https?:\/\//i.test(url)) url = 'https://' + url; // add protocol if missing
+  url = url.replace(/\/$/, '').trim();
+  // Ignore if empty or if it points at the frontend (common misconfiguration)
+  if (!url || url.includes('vercel.app') || url.includes('localhost:5173')) {
+    url = RAILWAY_URL;
+  }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
   return url;
 }
 const BASE = resolveBase();
