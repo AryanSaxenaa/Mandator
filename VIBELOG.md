@@ -1230,3 +1230,19 @@ Changes:
 - frontend/src/lib/api.ts: wrapped fetch in try/catch to surface network/CORS errors with the target URL in the message (previously "Failed to fetch" with no context).
 
 Commit: 2bee333
+
+## Session 14
+User prompt: "Failed to save again - Save failed: cyclic object value. Vercel logs show 401 on _next/static chunks. Nothing being logged on railway. Also VITE_API_URL=https://mandator-psi.vercel.app in Vercel dashboard."
+
+Diagnosis:
+1. "cyclic object value" - React Flow Node objects have circular internal properties (__rf, internals, React fiber). Passing raw nodes to JSON.stringify crashes. Need to sanitize.
+2. VITE_API_URL=https://mandator-psi.vercel.app in Vercel dashboard was overriding frontend/.env.production and pointing all API calls at the frontend itself (Vercel), not Railway. Hence Railway never received any requests and kept sleeping/stopping.
+3. Vercel logs show /_next/ paths with 401 - those are from a Vercel preview URL (different project/deployment), not the production mandator-psi.vercel.app.
+
+Changes:
+- frontend/src/store/pipelineStore.ts: added sanitizeNode() and sanitizeEdge() helpers that extract only id/type/position/data (nodes) and id/source/target/handles (edges), stripping all React Flow internal properties before serialization.
+- frontend/src/lib/api.ts: hardcoded RAILWAY_URL fallback - if VITE_API_URL is missing, empty, or points at vercel.app/localhost:5173, always use the Railway URL directly. This makes the app immune to Vercel dashboard misconfiguration.
+- frontend/src/lib/socket.ts: same hardcoded fallback logic for Socket.IO connection.
+
+Commit: 2ac67c5
+
