@@ -431,14 +431,14 @@ export default function Canvas() {
           </select>
 
           <AppButton variant="secondary" icon={Trash2} onClick={handleClear}>Clear</AppButton>
-          <AppButton variant="secondary" icon={Save} onClick={handleSave} disabled={isSaving}>
+          <AppButton variant="secondary" icon={Save} onClick={() => handleSave()} disabled={isSaving}>
             {isSaving ? 'Saving…' : 'Save'}
           </AppButton>
           <AppButton variant="secondary" icon={Play} onClick={handleRun}
             title={linkedAgent ? 'Run pipeline now' : 'Deploy & run'}>
             Run
           </AppButton>
-          <AppButton variant="primary" icon={Rocket} onClick={handleDeploy}>Deploy</AppButton>
+          <AppButton variant="primary" icon={Rocket} onClick={() => handleDeploy()}>Deploy</AppButton>
         </div>
 
         {/* React Flow */}
