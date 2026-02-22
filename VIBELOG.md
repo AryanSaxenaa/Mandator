@@ -1257,3 +1257,16 @@ Changes:
 
 Commit: 601effb
 
+## Session 16
+User prompt: "When I clicked save it lead me to a black screen with this link https://mandator-psi.vercel.app/canvas?id=8fbe2665-... Railway logs show POST /api/pipelines and PUT /api/pipelines/... succeeded."
+
+Diagnosis: Save succeeded (confirmed by Railway logs), but after navigate to /canvas?id=... the page went completely blank (dark background, no UI). Two problems:
+1. Race condition: handleSave sets loadedForIdRef.current = pipe.id, then navigate changes pipelineId, which triggers FIX 3 useEffect that unconditionally resets loadedForIdRef to null. FIX 4 useEffect then fires, finds pipeline in store (with empty nodes from createPipeline), and wipes the canvas nodes.
+2. No error boundary: any unhandled React render error kills the entire tree with no recovery UI.
+
+Changes:
+- frontend/src/components/ErrorBoundary.tsx: new class component catching render errors, shows error message + "Go to Dashboard" button instead of blank page.
+- frontend/src/App.tsx: wrapped all routes in ErrorBoundary.
+- frontend/src/pages/Canvas.tsx: FIX 3 useEffect now checks if loadedForIdRef already matches pipelineId before resetting (handleSave sets it ahead of navigate). Also hardened decoratedNodes against null node.data.
+
+Commit: 64a2691
