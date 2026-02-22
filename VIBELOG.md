@@ -1246,3 +1246,14 @@ Changes:
 
 Commit: 2ac67c5
 
+## Session 15
+User prompt: "Save failed: Converting circular structure to JSON --> starting at object with constructor 'HTMLButtonElement' | property '__reactFiber$abk6bpqrqu' -> object with constructor 'i_' --- property 'stateNode' closes the circle. Still got this while saving."
+
+Diagnosis: Previous sanitizeNode() copied `n.data` as-is, but React Flow injects rendered Handle elements (HTMLButtonElement with __reactFiber) into node.data. The DOM-to-React-fiber chain is circular.
+
+Changes:
+- frontend/src/store/pipelineStore.ts: sanitizeNode now extracts only `data.label` + `data.config` (the only fields we need) and deep-clones through `safeClone()` which uses a WeakSet-based JSON.stringify replacer that skips DOM elements, React internals, circular refs, and functions.
+- frontend/src/lib/api.ts: added `safeStringify()` with same logic as additional safety net. `createPipeline` and `updatePipeline` now use `safeStringify` instead of `JSON.stringify`.
+
+Commit: 601effb
+
