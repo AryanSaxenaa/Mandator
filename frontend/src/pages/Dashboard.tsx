@@ -181,7 +181,7 @@ export default function Dashboard() {
                 style={{ border: '1px solid var(--border-tech)', background: 'var(--bg-dark)' }}
               >
                 <p className="text-sm font-rajdhani font-bold truncate" style={{ color: 'var(--text-main)' }}>
-                  {p.name}
+                  {typeof p.name === 'string' ? p.name : 'Untitled Pipeline'}
                 </p>
                 <p className="text-[10px] font-mono mt-1" style={{ color: 'var(--text-dim)' }}>
                   {(p.nodes || []).length} nodes · {(p.edges || []).length} edges

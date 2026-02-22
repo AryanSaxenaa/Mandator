@@ -425,7 +425,7 @@ export default function Canvas() {
           >
             <option value="">Select Pipeline</option>
             {pipelineStore.pipelines.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>{typeof p.name === 'string' ? p.name : 'Untitled'}</option>
             ))}
             <option value="__new__">+ New Pipeline</option>
           </select>

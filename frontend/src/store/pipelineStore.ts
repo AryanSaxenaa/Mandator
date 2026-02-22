@@ -47,6 +47,12 @@ function sanitizeEdge(e: Edge): object {
   };
 }
 
+/** Coerce pipeline name to a plain string (DB may contain a serialised object). */
+function safeName(v: unknown): string {
+  if (typeof v === 'string' && v.length > 0) return v;
+  return 'Untitled Pipeline';
+}
+
 export interface Pipeline {
   id: string;
   name: string;
@@ -81,7 +87,8 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   fetchPipelines: async () => {
     set({ isLoading: true, error: null });
     try {
-      const pipelines = await api.listPipelines();
+      const raw = await api.listPipelines();
+      const pipelines = raw.map((p: any) => ({ ...p, name: safeName(p.name) }));
       set({ pipelines, isLoading: false });
     } catch (err: unknown) {
       set({ error: (err as Error).message, isLoading: false });
@@ -101,7 +108,8 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   },
 
   createPipeline: async (name) => {
-    const pipeline = await api.createPipeline({ name, nodes: [], edges: [] });
+    const pipeline = await api.createPipeline({ name: safeName(name), nodes: [], edges: [] });
+    pipeline.name = safeName(pipeline.name);
     set({ pipelines: [pipeline, ...get().pipelines] });
     return pipeline;
   },

@@ -239,7 +239,7 @@ export default function AgentDetail() {
               <div className="flex justify-between">
                 <span style={{ color: 'var(--text-dim)' }}>Pipeline</span>
                 <Link to={`/canvas?id=${agent.pipelineId}`} className="hover:underline" style={{ color: 'var(--accent)' }}>
-                  {pipeline?.name || agent.pipelineId?.slice(0, 8)}
+                  {(typeof pipeline?.name === 'string' ? pipeline.name : '') || agent.pipelineId?.slice(0, 8)}
                 </Link>
               </div>
             </div>

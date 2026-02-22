@@ -185,7 +185,7 @@ function mapKeys(obj, fn) {
 function rowToPipeline(r) {
   return {
     id: r.id,
-    name: r.name,
+    name: (typeof r.name === 'string' && r.name) ? r.name : 'Untitled Pipeline',
     nodes: typeof r.nodes === 'string' ? JSON.parse(r.nodes) : r.nodes || [],
     edges: typeof r.edges === 'string' ? JSON.parse(r.edges) : r.edges || [],
     createdAt: r.created_at,
@@ -196,7 +196,7 @@ function rowToPipeline(r) {
 function pipelineToRow(p) {
   return {
     id: p.id,
-    name: p.name || 'Untitled Pipeline',
+    name: (typeof p.name === 'string' && p.name) ? p.name : 'Untitled Pipeline',
     nodes: JSON.stringify(p.nodes || []),
     edges: JSON.stringify(p.edges || []),
     created_at: p.createdAt || new Date().toISOString(),
