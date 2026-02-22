@@ -102,7 +102,16 @@ export async function removeAgent(id) {
 export async function saveJournalEntry(entry) {
   const row = journalToRow(entry);
   const { error } = await supabase.from('journal').insert(row);
-  if (error) throw error;
+  if (error) {
+    // If node_name column doesn't exist yet, retry without it
+    if (error.code === '42703' && row.node_name !== undefined) {
+      const { node_name, ...rowWithout } = row;
+      const { error: retryErr } = await supabase.from('journal').insert(rowWithout);
+      if (retryErr) throw retryErr;
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function getJournal(agentId, opts = {}) {
@@ -244,6 +253,7 @@ function rowToJournal(r) {
     agentId: r.agent_id,
     pipelineId: r.pipeline_id,
     nodeId: r.node_id,
+    nodeName: r.node_name || r.node_type,
     nodeType: r.node_type,
     status: r.status,
     txHash: r.tx_hash,
@@ -264,6 +274,7 @@ function journalToRow(j) {
     agent_id: j.agentId,
     pipeline_id: j.pipelineId,
     node_id: j.nodeId,
+    node_name: j.nodeName || null,
     node_type: j.nodeType,
     status: j.status,
     tx_hash: j.txHash || null,

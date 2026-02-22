@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS journal (
   agent_id    TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   pipeline_id TEXT,
   node_id     TEXT,
+  node_name   TEXT,
   node_type   TEXT,
   status      TEXT NOT NULL,
   tx_hash     TEXT,
@@ -46,6 +47,9 @@ CREATE TABLE IF NOT EXISTS journal (
   result      JSONB,
   timestamp   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration: add node_name if table already exists
+ALTER TABLE journal ADD COLUMN IF NOT EXISTS node_name TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_journal_agent  ON journal(agent_id);
 CREATE INDEX IF NOT EXISTS idx_journal_ts     ON journal(timestamp DESC);

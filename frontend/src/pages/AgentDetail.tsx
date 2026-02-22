@@ -18,13 +18,18 @@ interface TxEntry {
   agentId: string;
   pipelineId: string;
   nodeId: string;
+  nodeName?: string;
   nodeType: string;
   status: string;
+  result?: string;
   txHash?: string;
   amount?: string;
+  amountWei?: string;
   to?: string;
+  memo?: string;
   error?: string;
   ts: string;
+  timestamp?: string;
 }
 
 export default function AgentDetail() {
@@ -50,16 +55,25 @@ export default function AgentDetail() {
   const blockedNodeIds = useExecutionStore(s => s.blockedNodeIds);
   const executionLog = useExecutionStore(s => s.executionLog);
 
+  // Fetch fresh data every time we land on this page
   useEffect(() => {
     agentStore.fetchAgents();
     pipelineStore.fetchPipelines();
-  }, []);
-
-  useEffect(() => {
     if (id) {
       api.listTransactions(id, { limit: 50 }).then(r => setTransactions(r.entries || [])).catch(() => {});
       setLoading(false);
     }
+  }, [id]);
+
+  // Poll agent + transactions every 5s so data stays fresh
+  // even if the user navigated away and came back
+  useEffect(() => {
+    if (!id) return;
+    const interval = setInterval(() => {
+      agentStore.fetchAgents();
+      api.listTransactions(id, { limit: 50 }).then(r => setTransactions(r.entries || [])).catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
   }, [id]);
 
   // Auto-scroll log
@@ -67,7 +81,7 @@ export default function AgentDetail() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [executionLog]);
 
-  // Refresh transactions when execution events arrive
+  // Refresh transactions when execution events arrive (real-time)
   useEffect(() => {
     if (id && completedNodeIds.size > 0) {
       api.listTransactions(id, { limit: 50 }).then(r => setTransactions(r.entries || [])).catch(() => {});
@@ -254,43 +268,58 @@ export default function AgentDetail() {
               <p className="text-xs font-mono" style={{ color: 'var(--text-dim)' }}>No transactions yet</p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {transactions.map(tx => (
-                  <div key={tx.id} className="p-2 text-[10px] font-mono" style={{ border: '1px solid var(--border-tech)', background: 'var(--bg-dark)' }}>
-                    <div className="flex justify-between mb-1">
-                      <span style={{
-                        color: tx.status === 'confirmed' ? 'var(--success)' :
-                               tx.status === 'failed' ? 'var(--error)' :
-                               tx.status === 'rejected' ? 'var(--warning)' :
-                               'var(--text-main)',
-                      }}>
-                        {tx.status.toUpperCase()}
-                      </span>
-                      <span style={{ color: 'var(--text-dim)' }}>{tx.nodeType}</span>
-                    </div>
-                    {tx.amount && (
-                      <div style={{ color: 'var(--text-main)' }}>
-                        {tx.amount} ETH → {tx.to?.slice(0, 8)}...
+                {transactions.map(tx => {
+                  const statusColor =
+                    tx.status === 'confirmed' ? 'var(--success)' :
+                    tx.status === 'error' || tx.status === 'failed' ? 'var(--danger)' :
+                    tx.status === 'rejected' ? 'var(--warning)' :
+                    tx.status === 'halted' ? 'var(--warning)' :
+                    'var(--text-main)';
+                  const displayResult = tx.result || tx.status;
+                  return (
+                    <div key={tx.id} className="p-2 text-[10px] font-mono" style={{ border: '1px solid var(--border-tech)', background: 'var(--bg-dark)' }}>
+                      <div className="flex justify-between mb-1">
+                        <span style={{ color: statusColor }}>
+                          {tx.status.toUpperCase()}
+                        </span>
+                        <span style={{ color: 'var(--text-dim)' }}>{tx.nodeName || tx.nodeType}</span>
                       </div>
-                    )}
-                    {tx.txHash && (
-                      <a
-                        href={`https://etherscan.io/tx/${tx.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 mt-1 hover:underline"
-                        style={{ color: 'var(--accent)' }}
-                      >
-                        {tx.txHash.slice(0, 10)}... <ExternalLink size={10} />
-                      </a>
-                    )}
-                    {tx.error && (
-                      <div className="mt-1" style={{ color: 'var(--error)' }}>{tx.error}</div>
-                    )}
-                    <div className="mt-1" style={{ color: 'var(--text-dim)' }}>
-                      {tx.ts || tx.timestamp ? new Date(tx.ts || tx.timestamp).toLocaleString() : '--'}
+                      {displayResult && displayResult !== tx.status && (
+                        <div style={{ color: 'var(--text-main)' }}>→ {displayResult}</div>
+                      )}
+                      {tx.amount && (
+                        <div style={{ color: 'var(--text-main)' }}>
+                          {tx.amount} ETH → {tx.to?.slice(0, 8)}...
+                        </div>
+                      )}
+                      {tx.amountWei && !tx.amount && (
+                        <div style={{ color: 'var(--text-main)' }}>
+                          {tx.amountWei} wei → {tx.to?.slice(0, 8)}...
+                        </div>
+                      )}
+                      {tx.memo && (
+                        <div className="mt-0.5" style={{ color: 'var(--text-dim)' }}>Memo: {tx.memo}</div>
+                      )}
+                      {tx.txHash && (
+                        <a
+                          href={`https://etherscan.io/tx/${tx.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 mt-1 hover:underline"
+                          style={{ color: 'var(--accent)' }}
+                        >
+                          {tx.txHash.slice(0, 10)}... <ExternalLink size={10} />
+                        </a>
+                      )}
+                      {tx.error && (
+                        <div className="mt-1" style={{ color: 'var(--danger)' }}>{tx.error}</div>
+                      )}
+                      <div className="mt-1" style={{ color: 'var(--text-dim)' }}>
+                        {tx.ts || tx.timestamp ? new Date(tx.ts || tx.timestamp).toLocaleString() : '--'}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TechCard>
