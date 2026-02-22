@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useWalletStore } from './store/walletStore';
+import ErrorBoundary from './components/ErrorBoundary';
 import AppLayout from './components/AppLayout';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -22,6 +23,7 @@ export default function App() {
   }, [darkMode]);
 
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -40,5 +42,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }

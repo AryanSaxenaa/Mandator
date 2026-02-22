@@ -80,7 +80,7 @@ export default function Canvas() {
   const decoratedNodes = useMemo(() => nodes.map(n => ({
     ...n,
     data: {
-      ...n.data,
+      ...(n.data || {}),
       _executing: executingNodeIds.has(n.id),
       _completed: completedNodeIds.has(n.id),
       _errored: errorNodeIds.has(n.id),
@@ -98,10 +98,14 @@ export default function Canvas() {
   const showError = (msg: string) => setToastError(msg);
 
   // FIX 3: When pipelineId changes, reset the loaded-guard so new pipeline can load
+  // BUT don't reset if handleSave just set it (loadedForIdRef already matches)
   useEffect(() => {
     if (prevPipelineIdRef.current !== pipelineId) {
       prevPipelineIdRef.current = pipelineId ?? null;
-      loadedForIdRef.current = null;
+      // Only reset if the ref doesn't already match — handleSave sets it ahead of navigate
+      if (loadedForIdRef.current !== pipelineId) {
+        loadedForIdRef.current = null;
+      }
     }
   }, [pipelineId]);
 
