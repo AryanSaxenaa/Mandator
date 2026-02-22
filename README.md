@@ -109,3 +109,8 @@ Default accent is `#F97316` (orange, light mode) / `#9d4edd` (purple, dark mode)
 
 ## Vibe Log
 See [VIBELOG.md](./VIBELOG.md) for development history.
+
+<img width="3335" height="767" alt="image" src="https://github.com/user-attachments/assets/bfbac8e7-7167-4cf0-93f5-1380f390baa2" />
+
+Shoutout to https://variant.com/ for helping with the UIs
+
