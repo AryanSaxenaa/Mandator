@@ -15,6 +15,22 @@ function resolveBase(): string {
 }
 const BASE = resolveBase();
 
+// Safe JSON.stringify that strips circular refs, DOM nodes, and React internals
+function safeStringify(obj: unknown): string {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) return undefined;
+      if (typeof SVGElement !== 'undefined' && value instanceof SVGElement) return undefined;
+      if (seen.has(value)) return undefined;
+      seen.add(value);
+    }
+    if (typeof key === 'string' && (key.startsWith('__react') || key.startsWith('__rf') || key === 'internals')) return undefined;
+    if (typeof value === 'function') return undefined;
+    return value;
+  });
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
@@ -41,11 +57,11 @@ export function getPipeline(id: string) {
 }
 
 export function createPipeline(data: { name: string; nodes: any[]; edges: any[] }) {
-  return request<any>('/api/pipelines', { method: 'POST', body: JSON.stringify(data) });
+  return request<any>('/api/pipelines', { method: 'POST', body: safeStringify(data) });
 }
 
 export function updatePipeline(id: string, data: any) {
-  return request<any>(`/api/pipelines/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  return request<any>(`/api/pipelines/${id}`, { method: 'PUT', body: safeStringify(data) });
 }
 
 export function deletePipeline(id: string) {

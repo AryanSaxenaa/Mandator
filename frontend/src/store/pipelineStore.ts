@@ -2,14 +2,37 @@ import { create } from 'zustand';
 import type { Node, Edge } from 'reactflow';
 import * as api from '../lib/api';
 
-// Strip React Flow internal properties before serialising to JSON.
-// Raw Node objects contain circular refs (__rf, internals) that crash JSON.stringify.
+// Strip React Flow internal / DOM properties before serialising to JSON.
+// React Flow injects __rf, internals, and rendered Handle elements (HTMLButtonElement)
+// into node.data which contain circular refs that crash JSON.stringify.
+function safeClone(obj: unknown): unknown {
+  const seen = new WeakSet();
+  return JSON.parse(JSON.stringify(obj, (_key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      // Skip DOM nodes and React fibers
+      if (value instanceof HTMLElement || value instanceof SVGElement) return undefined;
+      if (seen.has(value)) return undefined;
+      seen.add(value);
+    }
+    // Skip React-internal and React Flow-internal keys
+    if (typeof _key === 'string' && (_key.startsWith('__react') || _key.startsWith('__rf') || _key === 'internals')) return undefined;
+    // Skip functions
+    if (typeof value === 'function') return undefined;
+    return value;
+  }));
+}
+
 function sanitizeNode(n: Node): object {
+  // Only keep the data we actually need: label + config
+  const cleanData: Record<string, unknown> = {
+    label: n.data?.label,
+    config: n.data?.config ?? {},
+  };
   return {
     id: n.id,
     type: n.type,
     position: { x: n.position.x, y: n.position.y },
-    data: n.data,
+    data: safeClone(cleanData),
   };
 }
 
